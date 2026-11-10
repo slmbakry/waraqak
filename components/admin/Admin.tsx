@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num } from "@/lib/format";
-import { services, sortStages, stageLate } from "@/lib/data";
+import { categories, services, sortStages, stageLate } from "@/lib/data";
 import { readSession, writeSession } from "@/lib/storage";
 import { fmtSize } from "@/lib/files";
 import { useLoad, useSession } from "../session";
 import { Head, Kpi, LoadError, Loading } from "../ui";
 
-const PROVIDER_KINDS: Record<string, string> = { accounting: "مكتب محاسبة", law: "مكتب محاماة", individual: "فرد" };
+const PROVIDER_KINDS: Record<string, string> = { accounting: "مكتب محاسبة", law: "مكتب محاماة", consulting: "مكتب استشارات", company: "شركة خدمات", broker: "وسيط", individual: "فرد" };
 const ROLES = { owner: "صاحب عمل", office: "مقدم خدمة", admin: "مدير" };
 const WAIT_DAYS = 1;
 const since = (t: string) => (Date.now() - new Date(t).getTime()) / DAY;
@@ -244,7 +244,7 @@ export function Offices() {
         {error ? <p className="empty">تعذّر تحميل مقدمي الخدمة</p> : !data ? <Loading /> : data.length ? (
           <table><thead><tr><th>مقدم الخدمة</th><th>النوع</th><th>الهاتف</th><th>رقم الترخيص</th><th>خدمات مسعّرة</th><th></th></tr></thead><tbody>
             {data.map((o) => (
-              <tr key={o.id}><td>{o.name}</td><td>{PROVIDER_KINDS[o.kind] || ""}</td><td className="ltr">{o.phone || ""}</td><td className="ltr">{o.license_no || ""}</td>
+              <tr key={o.id}><td>{o.name}</td><td>{PROVIDER_KINDS[o.kind] || o.kind || ""}</td><td className="ltr">{o.phone || ""}</td><td className="ltr">{o.license_no || ""}</td>
                 <td>{num(o.office_services?.[0]?.count || 0)}</td><td><Link className="btn small" href={`/admin/offices/${o.id}/prices`}>الأسعار والمدد</Link></td></tr>
             ))}
           </tbody></table>
@@ -254,21 +254,21 @@ export function Offices() {
   );
 }
 
-const KINDS = { founding: "التأسيس", compliance: "الالتزامات الدورية", renewal: "التجديدات", amendment: "التعديلات", closure: "الإنهاء", license: "التراخيص" };
-
 export function Prices({ officeId }: { officeId: string }) {
   const { toast } = useSession();
   const { data, error } = useLoad(async () => {
-    const [{ data: office }, svcs, { data: rows }] = await Promise.all([
+    const [{ data: office }, all, cats, { data: rows }] = await Promise.all([
       sb.from("offices").select("id,name").eq("id", officeId).maybeSingle(),
-      services(),
+      services(), categories(),
       sb.from("office_services").select("service_id,fee,days").eq("office_id", officeId),
     ]);
-    return { office, svcs, cur: Object.fromEntries((rows || []).map((r) => [r.service_id, r])) };
+    // Services priced per request have no published price to set here.
+    const svcs = Object.fromEntries(Object.entries(all).filter(([, x]) => x.mode === "procedure"));
+    return { office, svcs, catOf: Object.fromEntries(cats.map((c) => [c.id, c.title])), cur: Object.fromEntries((rows || []).map((r) => [r.service_id, r])) };
   }, [officeId]);
   if (error) return <LoadError />;
   if (!data) return <Loading />;
-  const { office, svcs, cur } = data;
+  const { office, svcs, cur, catOf } = data;
   if (!office) return <section className="panel"><p>مقدم الخدمة هذا غير موجود.</p><Link className="btn" href="/admin/offices">العودة إلى مقدمي الخدمة</Link></section>;
   const save = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -291,7 +291,7 @@ export function Prices({ officeId }: { officeId: string }) {
       <form className="panel" onSubmit={save}>
         <div className="table-wrap"><table><thead><tr><th>الخدمة</th><th>الرسوم الحكومية</th><th>الأتعاب بالجنيه</th><th>المدة بالأيام</th></tr></thead><tbody>
           {Object.values(svcs).map((s) => (
-            <tr key={s.id}><td>{s.title}<br /><small className="note">{KINDS[s.kind]}</small></td><td>{money(s.gov_fee)}</td>
+            <tr key={s.id}><td>{s.title}<br /><small className="note">{catOf[s.category_id] || ""}</small></td><td>{money(s.gov_fee)}</td>
               <td><input className="mini" type="number" min="0" step="50" name={`fee-${s.id}`} defaultValue={cur[s.id]?.fee ?? ""} /></td>
               <td><input className="mini" type="number" min="1" step="1" name={`days-${s.id}`} defaultValue={cur[s.id]?.days ?? ""} /></td></tr>
           ))}

@@ -2,33 +2,38 @@
 // One request, as its owner (or an admin) sees it: status, stages, files, history and the rating.
 import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num } from "@/lib/format";
-import { EVENTS, STATUS, services, stageLate } from "@/lib/data";
+import { eventLabel, STATUS, awaitingOffers, services, stageLate } from "@/lib/data";
 import { useLoad, useSession } from "../session";
 import { Avatar, FilesBlock, Head, Kpi, LoadError, Loading, StageRow, finishStage } from "../ui";
 import Requirements from "../Requirements";
 import OwnerConfirm from "./OwnerConfirm";
 import { placeOf } from "@/lib/places";
+import { AgreementBox, NeedList, Offers, type Agreement, type Offer } from "./Quote";
 
 export default function Request({ id }: { id: string }) {
   const { uid, toast, role } = useSession();
   const { data, error, reload } = useLoad(async () => {
     const svcs = await services();
-    const [{ data: r }, { data: stages }, { data: events }] = await Promise.all([
+    const [{ data: r }, { data: stages }, { data: events }, { data: offers }, { data: agreement }] = await Promise.all([
       sb.from("requests").select("*, offices(name,phone), companies(name,governorate,registry_office,tax_office)").eq("id", id).maybeSingle(),
       sb.from("request_stages").select("*").eq("request_id", id).order("idx"),
       sb.from("events").select("*").eq("request_id", id).order("created_at"),
+      sb.from("offers").select("*, offices(name)").eq("request_id", id).eq("auto", false).order("fee"),
+      sb.from("agreements").select("*").eq("request_id", id).maybeSingle(),
     ]);
     if (!r) return { r: null };
     const canRate = r.status === "done" && !!r.office_id;
     const { data: rating } = canRate ? await sb.from("ratings").select("*").eq("request_id", id).maybeSingle() : { data: null };
-    return { r, s: svcs[r.service_id], stages: stages || [], events: events || [], canRate, rating };
+    return { r, s: svcs[r.service_id], stages: stages || [], events: events || [], canRate, rating, offers: (offers || []) as Offer[], agreement: agreement as Agreement | null };
   }, [id]);
   if (error) return <LoadError />;
   if (!data) return <Loading />;
-  const { r, s, stages, events, canRate, rating } = data;
+  const { r, s, stages, events, canRate, rating, offers, agreement } = data;
   if (!r) return <section className="panel"><p>هذا الطلب غير موجود.</p></section>;
 
-  const self = !r.office_id;
+  const waiting = awaitingOffers(r);          // a request for offers nobody has been chosen for yet
+  const self = !r.office_id && !waiting;
+  const liveOffers = offers.filter((o) => o.status === "sent").length;
   const cur = stages.findIndex((x) => !x.done_at);
   const open = !["done", "cancelled"].includes(r.status);
   const doneCount = stages.filter((x) => x.done_at).length;
@@ -51,29 +56,45 @@ export default function Request({ id }: { id: string }) {
   return (
     <>
       <Head back={[`/companies/${r.company_id}`, "لوحتي"]} eyebrow={r.companies?.name || ""} title={s.title}>
-        <p>{self ? "تنفذ هذا الطلب بنفسك، ويمكنك تحديد كل مرحلة عند اكتمالها." : `ينفذه ${r.offices?.name || ""}. ومقدم الخدمة هو من يحدّث المراحل.`}</p>
+        <p>{waiting ? "أرسلنا طلبك إلى مقدمي الخدمة في هذا القسم. تظهر عروضهم هنا لتقارن وتختار." : self ? "تنفذ هذا الطلب بنفسك، ويمكنك تحديد كل مرحلة عند اكتمالها." : `ينفذه ${r.offices?.name || ""}. ومقدم الخدمة هو من يحدّث المراحل.`}</p>
       </Head>
-      <div className="kpis">
-        <Kpi ic={r.status === "done" ? "check" : "stamp"} tone={tone} value={label} label="الحالة" />
-        <Kpi ic="list" tone={lateNow ? "bad" : ""} value={`${num(doneCount)} من ${num(stages.length)}`} label={lateNow ? `المرحلة متأخرة ${days(lateNow)}` : "مراحل مكتملة"} />
-        <Kpi ic="chart" tone="ok" value={money(r.quoted_fee)} label="التكلفة المعلنة" />
-        <Kpi ic="clock" tone="warn" value={r.status === "done" ? fmtDate(r.completed_at) : fmtDate(due)} label={r.status === "done" ? "اكتمل في" : "الموعد المتوقع"} />
-      </div>
-      {!self && r.status === "new" && <p className="alert">الطلب بانتظار قبول مقدم الخدمة.</p>}
+      {waiting && open ? (
+        <div className="kpis">
+          <Kpi ic="stamp" tone="warn" value="بانتظار العروض" label="الحالة" />
+          <Kpi ic="list" tone={liveOffers ? "ok" : ""} value={liveOffers} label="عروض وصلت" />
+          <Kpi ic="calendar" value={fmtDate(r.created_at)} label="تاريخ الطلب" />
+        </div>
+      ) : (
+        <div className="kpis">
+          <Kpi ic={r.status === "done" ? "check" : "stamp"} tone={tone} value={label} label="الحالة" />
+          <Kpi ic="list" tone={lateNow ? "bad" : ""} value={`${num(doneCount)} من ${num(stages.length)}`} label={lateNow ? `المرحلة متأخرة ${days(lateNow)}` : "مراحل مكتملة"} />
+          <Kpi ic="chart" tone="ok" value={money(r.quoted_fee)} label={r.mode === "quote" ? "السعر المتفق عليه" : "التكلفة المعلنة"} />
+          <Kpi ic="clock" tone="warn" value={r.status === "done" ? fmtDate(r.completed_at) : fmtDate(due)} label={r.status === "done" ? "اكتمل في" : "الموعد المتوقع"} />
+        </div>
+      )}
+      {!self && !waiting && r.status === "new" && <p className="alert">الطلب بانتظار قبول مقدم الخدمة.</p>}
       {r.escalated_at && open && <p className="alert">تم إبلاغ الإدارة بهذا التأخير، وهي تتابعه مع مقدم الخدمة.</p>}
       <div className="split">
         <div className="split-main">
           {r.status === "done" && role === "owner" && <OwnerConfirm companyId={r.company_id} service={s} />}
           {canRate && <RateBlock rating={rating} office={r.offices?.name} requestId={id} officeId={r.office_id} onDone={reload} />}
-          <section className="panel"><h2>المراحل</h2>
+          {waiting && open && (
+            <section className="panel"><div className="row between"><h2>العروض</h2><span className="note">قارن السعر والمدة والشروط</span></div>
+              <Offers offers={offers} onAccepted={reload} />
+              <button className="btn danger small" type="button" onClick={cancel}>إلغاء الطلب</button>
+            </section>
+          )}
+          {agreement && r.mode === "quote" && <AgreementBox a={agreement} office={r.offices?.name} />}
+          {!(waiting && open) && <section className="panel"><h2>المراحل</h2>
             <div className="track">
               {stages.map((x, i) => <StageRow key={x.id} stage={x} isNow={i === cur && open} onFinish={self && i === cur && open ? () => finish(x) : undefined} />)}
             </div>
             {r.status === "new" && <button className="btn danger small" type="button" onClick={cancel}>إلغاء الطلب</button>}
-          </section>
+          </section>}
         </div>
         <aside className="split-side">
-          {!self && (
+          {r.mode === "quote" && <section className="panel"><h2>ما طلبته</h2><NeedList fields={s.need_fields || []} need={r.need} /></section>}
+          {!self && !waiting && (
             <section className="panel">
               <div className="row"><Avatar name={r.offices?.name} /><span className="grow"><b>{r.offices?.name || ""}</b><small className="note">مقدم الخدمة المنفذ</small></span></div>
               {r.offices?.phone && <a className="btn" href={`tel:${r.offices.phone}`}><span className="ltr">{r.offices.phone}</span></a>}
@@ -85,7 +106,7 @@ export default function Request({ id }: { id: string }) {
             {events.slice().reverse().map((e) => (
               <div key={e.id} className="feed">
                 <span className={`dot ${["declined", "cancelled"].includes(e.kind) ? "bad" : e.kind === "note" || e.kind === "file" ? "warn" : ""}`} aria-hidden="true" />
-                <span><b>{EVENTS[e.kind] || e.kind}</b><small>{e.note ? e.note + " · " : ""}{fmtDate(e.created_at)}</small></span>
+                <span><b>{eventLabel(e.kind, r.mode)}</b><small>{e.note ? e.note + " · " : ""}{fmtDate(e.created_at)}</small></span>
               </div>
             ))}
           </section>

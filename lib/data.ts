@@ -4,7 +4,12 @@ import { DAY, num, today } from "./format";
 
 const REMINDER_BUFFER_DAYS = 14;
 
-export type Service = { id: string; title: string; kind: string; agency: string; gov_fee: number; self_days: number; validity_days: number | null; docs: string[]; place_kind: import("./places").PlaceKind };
+// A question a service asks before providers can price it.
+export type NeedField = { id: string; label: string; type: "text" | "number" | "select" | "date"; options?: string[]; required?: boolean };
+// A service is either a procedure with a published price, or a request for offers ("quote").
+export type Service = { id: string; title: string; kind: string; agency: string; gov_fee: number; self_days: number; validity_days: number | null; docs: string[]; place_kind: import("./places").PlaceKind;
+  category_id: string; mode: "procedure" | "quote"; need_fields: NeedField[]; summary: string | null };
+export type Category = { id: string; title: string; summary: string | null; icon: string; sort: number; active: boolean };
 export type Services = Record<string, Service>;
 export type Stage = { id?: string; idx: number; title: string; planned_days: number; started_at: string | null; done_at: string | null };
 export type Option = { key: string; officeId: string | null; label: string; sub?: string; fee: number; cost: number; days: number;
@@ -19,6 +24,22 @@ export async function services(): Promise<Services> {
   }
   return cache;
 }
+
+let catCache: Category[] | null = null;
+export async function categories(): Promise<Category[]> {
+  if (!catCache) {
+    const { data, error } = await sb.from("categories").select("*").eq("active", true).order("sort");
+    if (error) throw error;
+    catCache = data as Category[];
+  }
+  return catCache;
+}
+export const forgetCatalog = () => { cache = null; catCache = null; };
+
+// A request for offers has nobody carrying it out until the owner accepts one.
+type Doer = { office_id?: string | null; mode?: string | null; offices?: any };
+export const awaitingOffers = (r: Doer) => r.mode === "quote" && !r.office_id;
+export const doerName = (r: Doer) => (r.office_id ? r.offices?.name || "" : awaitingOffers(r) ? "بانتظار العروض" : "تنفذه بنفسك");
 
 // How a document stands today: ok, renew soon, or expired.
 export function docStatus(doc: { expires_on: string | null }, svc?: Service) {
@@ -75,4 +96,7 @@ export const sortStages = <T extends Stage>(st?: T[] | null) => (st || []).slice
 
 export const EVENTS: Record<string, string> = { rated: "قيّم صاحب العمل مقدم الخدمة", created: "تم إنشاء الطلب", accepted: "قبل مقدم الخدمة الطلب", declined: "اعتذر مقدم الخدمة عن الطلب",
   stage_done: "اكتملت مرحلة", done: "اكتمل الطلب", cancelled: "أُلغي الطلب", note: "ملاحظة", file: "رُفع ملف" };
-export const STATUS: Record<string, [string, string]> = { new: ["", "جديد"], accepted: ["", "قبله مقدم الخدمة"], in_progress: ["warn", "قيد التنفيذ"], done: ["ok", "تم"], cancelled: ["", "ملغي"] };
+// On a request for offers it is the owner who accepts, so the entry reads differently.
+export const eventLabel = (kind: string, mode?: string | null) => (kind === "accepted" && mode === "quote" ? "قُبل العرض وتم الاتفاق" : EVENTS[kind] || kind);
+export const OFFER_STATUS: Record<string, [string, string]> = { sent: ["warn", "بانتظار رد صاحب العمل"], accepted: ["ok", "مقبول"], declined: ["", "اختير عرض آخر"], withdrawn: ["", "مسحوب"] };
+export const STATUS: Record<string, [string, string]> = { new: ["", "جديد"], accepted: ["", "تم القبول"], in_progress: ["warn", "قيد التنفيذ"], done: ["ok", "تم"], cancelled: ["", "ملغي"] };

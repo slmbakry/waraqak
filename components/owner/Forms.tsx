@@ -116,6 +116,8 @@ export function Renew({ docId }: { docId: string }) {
   if (!data) return <Loading />;
   const { d, s, opts } = data;
   if (!d) return <section className="panel"><p>هذا المستند غير موجود.</p></section>;
+  // A service agreed by offer is renewed by asking for offers again.
+  if (s?.mode === "quote") return <section className="panel"><p>تجديد {d.title} يتم بطلب عروض جديدة من مقدمي الخدمة.</p><Link className="btn primary" href={`/services/${s.id}`}>اطلب عروضًا</Link></section>;
 
   const pick = picked ?? (opts[1]?.key || "self");
   const o = opts.find((x) => x.key === pick);

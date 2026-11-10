@@ -4,12 +4,11 @@
 import Link from "next/link";
 import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num, today } from "@/lib/format";
-import { STATUS, docStatus, services, sortStages, stageLate } from "@/lib/data";
+import { STATUS, awaitingOffers, docStatus, doerName, services, sortStages, stageLate } from "@/lib/data";
 import { CompanySwitch, useCompanies, type Company } from "../companies";
 import { applies, missingAnswers, occurrences, type Occurrence, type Profile, type Rule } from "@/lib/obligations";
 import { useState } from "react";
 import ObligationsPreview from "../ObligationsPreview";
-import { PATHS, SOON_PATHS } from "@/lib/paths";
 import { useLoad, useSession } from "../session";
 import { Head, Icon, LoadError, Loading } from "../ui";
 import Files from "./Files";
@@ -37,7 +36,7 @@ export function Obligations() {
     const [svcs, { data: docs }, { data: reqs }, { data: rules }, { data: done }, { data: mutes }] = await Promise.all([
       services(),
       sb.from("documents").select("*").eq("company_id", current.id),
-      sb.from("requests").select("id,service_id,status,document_id,quoted_days,accepted_at,created_at,offices(name)").eq("company_id", current.id).not("status", "in", "(done,cancelled)"),
+      sb.from("requests").select("id,service_id,status,document_id,quoted_days,accepted_at,created_at,mode,office_id,offices(name)").eq("company_id", current.id).not("status", "in", "(done,cancelled)"),
       sb.from("obligation_rules").select("*").eq("active", true).order("sort"),
       sb.from("obligation_done").select("rule_id,period").eq("company_id", current.id),
       sb.from("obligation_mutes").select("rule_id").eq("company_id", current.id),
@@ -68,7 +67,7 @@ export function Obligations() {
       href: busy ? `/requests/${busy.id}` : svc?.kind === "renewal" ? `/renew/${d.id}` : null, cta: busy ? "متابعة" : "تجديد" });
   });
   data.reqs.forEach((r) => {
-    if (r.document_id) return;
+    if (r.document_id || awaitingOffers(r)) return;
     const due = new Date(new Date(r.accepted_at || r.created_at).getTime() + (r.quoted_days || 0) * DAY);
     obs.push({ date: due, title: data.svcs[r.service_id]?.title || r.service_id, sub: "الموعد المتوقع لانتهاء الطلب",
       tone: due.getTime() < t ? "bad" : "", href: `/requests/${r.id}`, cta: "متابعة" });
@@ -220,62 +219,8 @@ function ProfileQuestions({ company, onSaved }: { company: Company; onSaved: () 
 }
 
 // ---------- Actions ----------
-// What the owner can do, starting from what they want rather than the procedure's name.
-export function Actions() {
-  const { current } = useCompanies();
-  const { data } = useLoad(async () => {
-    if (!current) return [];
-    const [svcs, { data: docs }] = await Promise.all([services(), sb.from("documents").select("*").eq("company_id", current.id)]);
-    return (docs || []).filter((d) => svcs[d.service_id]?.kind === "renewal");
-  }, [current?.id]);
-  return (
-    <>
-      <Head eyebrow={<>الإجراءات <CompanySwitch /></>} title="ماذا تريد أن تفعل؟">
-        <p>اختر ما تريده بكلماتك، وسنوضح لك الإجراء المناسب وسببه، والمستندات المطلوبة، والتكلفة والمدة.</p>
-      </Head>
-      <section className="panel"><h2>البداية</h2>
-        <div className="section-grid">
-          <Link className="path-card" href="/guide"><span className="tile-ic gold"><Icon name="idea" /></span><b>لدي فكرة وأريد تأسيس مشروع</b>
-            <small className="note">أسئلة قليلة تحدد الكيان المناسب، ثم خريطة خطواتك بالتكلفة والمدة.</small></Link>
-          <Link className="path-card" href="/companies/new"><span className="tile-ic ok"><Icon name="building" /></span><b>لدي شركة قائمة وأريد إضافتها</b>
-            <small className="note">أضف مستنداتها وتواريخ انتهائها لتصلك التذكيرات.</small></Link>
-        </div>
-      </section>
-      {current && (
-        <section className="panel"><h2>التجديد</h2>
-          {!data ? <Loading /> : data.length ? (
-            <div className="section-grid">{data.map((d) => {
-              const st = docStatus(d);
-              return (
-                <Link key={d.id} className="path-card" href={`/renew/${d.id}`}><b>تجديد {d.title}</b>
-                  <small className="note">{d.expires_on ? (st.left < 0 ? `انتهى في ${fmtDate(d.expires_on)}` : `ينتهي في ${fmtDate(d.expires_on)}`) : "بلا تاريخ انتهاء"}</small></Link>
-              );
-            })}</div>
-          ) : <p className="empty">أضف مستندات الشركة لتظهر هنا إجراءات تجديدها.</p>}
-        </section>
-      )}
-      <section className="panel"><h2>التعديل والالتزامات السنوية</h2>
-        <p className="note">كل مسار يبدأ بأسئلة قليلة، ثم يوضح الإجراء ومن يقرره ولماذا، والمستندات والخطوات. يمكنك قراءته قبل أن تكون لديك شركة.</p>
-        <div className="section-grid">{PATHS.map((p) => (
-          <Link key={p.id} className="path-card" href={`/paths/${p.id}`}><span className="chip">{p.group}</span><b>{p.title}</b><small className="note">{p.sub}</small></Link>
-        ))}</div>
-      </section>
-      <section className="panel"><h2>دليل أنشطة السجل التجاري</h2>
-        <p className="note">ابحث عن نشاطك كما يُكتب في السجل، واعرف الأنشطة التي يُطلب إضافتها معه عادة.</p>
-        <Link className="btn" href="/registry">افتح الدليل</Link>
-      </section>
-      <section className="panel"><h2>الأنشطة التي تحتاج ترخيصًا خاصًا</h2>
-        <p className="note">مثل الاستيراد والتصدير والسمسرة العقارية والمقاولات والأغذية. لكل نشاط الجهة المختصة، ومتى تبدأ، والمستندات والخطوات.</p>
-        <Link className="btn" href="/activities">عرض الأنشطة والتراخيص</Link>
-      </section>
-      {SOON_PATHS.length > 0 && <section className="panel"><h2>قيد الإعداد</h2>
-        <div className="section-grid">{SOON_PATHS.map((p) => (
-          <div key={p.title} className="path-card soon" aria-disabled="true"><span className="chip">{p.group} · قيد الإعداد</span><b>{p.title}</b><small className="note">{p.sub}</small></div>
-        ))}</div>
-      </section>}
-    </>
-  );
-}
+// The catalog of what an owner can start lives in its own file.
+export { Actions } from "./Catalog";
 
 // ---------- Company file ----------
 export function CurrentFiles() {
@@ -308,7 +253,7 @@ export function MyRequests() {
       <Link key={r.id} className={"req" + (late ? " late" : "")} href={`/requests/${r.id}`}>
         <div className="row between"><b>{data.svcs[r.service_id]?.title || r.service_id}</b>
           {late ? <span className="chip bad">متأخر {days(late)}</span> : <span className={`chip ${STATUS[r.status][0]}`}>{STATUS[r.status][1]}</span>}</div>
-        <small>{r.office_id ? r.offices?.name : "تنفذه بنفسك"} · {money(r.quoted_fee)}{cur ? ` · المرحلة الحالية: ${cur.title}` : ""}</small>
+        <small>{doerName(r)}{awaitingOffers(r) ? "" : ` · ${money(r.quoted_fee)}`}{cur && !awaitingOffers(r) ? ` · المرحلة الحالية: ${cur.title}` : ""}</small>
       </Link>
     );
   };

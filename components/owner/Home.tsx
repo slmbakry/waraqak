@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num, span, today } from "@/lib/format";
-import { docStatus, services, sortStages, stageLate } from "@/lib/data";
+import { awaitingOffers, docStatus, doerName, services, sortStages, stageLate } from "@/lib/data";
 import { pathFor } from "@/lib/storage";
 import { fmtSize } from "@/lib/files";
 import { applies, occurrences, type Rule } from "@/lib/obligations";
@@ -13,6 +13,9 @@ import { useLoad, useSession } from "../session";
 import { Avatar, Head, Icon, Kpi, LoadError, Loading } from "../ui";
 
 const BAD = ["late", "overdue", "expired", "escalated", "declined"];
+// Where renewing a document starts: a renewal procedure, or a fresh round of offers.
+const renewHref = (svc: { kind?: string; mode?: string; id?: string } | undefined, docId: string) =>
+  svc?.mode === "quote" ? `/services/${svc.id}` : svc?.kind === "renewal" ? `/renew/${docId}` : null;
 const feedTone = (kind: string) => (BAD.includes(kind) ? "bad" : ["renew", "wait"].includes(kind) ? "warn" : "ok");
 
 export default function OwnerHome({ companyId }: { companyId?: string }) {
@@ -40,12 +43,17 @@ export default function OwnerHome({ companyId }: { companyId?: string }) {
     const doneWithOffice = (reqs || []).filter((r) => r.status === "done" && r.office_id);
     const { data: rated } = doneWithOffice.length ? await sb.from("ratings").select("request_id").in("request_id", doneWithOffice.map((r) => r.id)) : { data: [] };
     const ratedIds = new Set((rated || []).map((x) => x.request_id));
-    return { svcs, companies, co, docs: docs || [], reqs: reqs || [], notes: notes || [], used: Number(used || 0), plan, fileCount: fileCount || 0, soon, actDone: new Set((actStatus || []).map((x) => x.activity_id)), askProfile: co.vat_registered === null || co.has_employees === null, toRate: doneWithOffice.find((r) => !ratedIds.has(r.id)) };
+    // Offers waiting on the owner's choice, per request.
+    const asking = (reqs || []).filter((r) => r.status === "new" && awaitingOffers(r)).map((r) => r.id);
+    const { data: sent } = asking.length ? await sb.from("offers").select("request_id").in("request_id", asking).eq("status", "sent") : { data: [] };
+    const offersOf: Record<string, number> = {};
+    (sent || []).forEach((x) => { offersOf[x.request_id] = (offersOf[x.request_id] || 0) + 1; });
+    return { svcs, companies, co, docs: docs || [], reqs: reqs || [], notes: notes || [], used: Number(used || 0), plan, fileCount: fileCount || 0, soon, offersOf, actDone: new Set((actStatus || []).map((x) => x.activity_id)), askProfile: co.vat_registered === null || co.has_employees === null, toRate: doneWithOffice.find((r) => !ratedIds.has(r.id)) };
   }, [uid, companyId]);
 
   if (error) return <LoadError />;
   if (!data) return <Loading />;
-  const { svcs, companies, co, docs, reqs, notes, toRate, used, plan, fileCount, soon, askProfile, actDone } = data;
+  const { svcs, companies, co, docs, reqs, notes, toRate, used, plan, fileCount, soon, askProfile, actDone, offersOf } = data;
 
   if (!companies.length) return (
     <>
@@ -71,10 +79,13 @@ export default function OwnerHome({ companyId }: { companyId?: string }) {
   type Todo = { tone: string; ic: string; title: string; sub: string; href: string | null; cta: string; soft?: boolean };
   const todo: Todo[] = [];
   list.filter((x) => x.cls === "bad").forEach((x) => todo.push({ tone: "bad", ic: "alert", title: `انتهت صلاحية ${x.d.title} منذ ${span(-x.st.left)}`,
-    sub: "جدّده في أسرع وقت لتجنب الغرامات", href: x.svc?.kind === "renewal" ? `/renew/${x.d.id}` : null, cta: "جدّد الآن" }));
+    sub: "جدّده في أسرع وقت لتجنب الغرامات", href: renewHref(x.svc, x.d.id), cta: "جدّد الآن" }));
   list.filter((x) => x.cls === "warn").forEach((x) => todo.push({ tone: "warn", ic: "clock", title: `ابدأ تجديد ${x.d.title}`,
-    sub: `ينتهي بعد ${span(x.st.left)}، والتجديد يستغرق وقتًا`, href: x.svc?.kind === "renewal" ? `/renew/${x.d.id}` : null, cta: "اطلب التجديد" }));
-  open.filter((r) => !r.office_id).forEach((r) => todo.push({ tone: "warn", ic: "arrow", title: `${svcs[r.service_id]?.title || ""}: خطوة مطلوبة منك`,
+    sub: `ينتهي بعد ${span(x.st.left)}، والتجديد يستغرق وقتًا`, href: renewHref(x.svc, x.d.id), cta: "اطلب التجديد" }));
+  open.filter((r) => awaitingOffers(r) && offersOf[r.id]).forEach((r) => todo.push({ tone: "warn", ic: "stamp",
+    title: offersOf[r.id] === 1 ? `وصلك عرض على ${svcs[r.service_id]?.title || "طلبك"}` : `وصلك ${num(offersOf[r.id])} عروض على ${svcs[r.service_id]?.title || "طلبك"}`,
+    sub: "قارن السعر والمدة والشروط، واقبل ما يناسبك", href: `/requests/${r.id}`, cta: "قارن العروض" }));
+  open.filter((r) => !r.office_id && !awaitingOffers(r)).forEach((r) => todo.push({ tone: "warn", ic: "arrow", title: `${svcs[r.service_id]?.title || ""}: خطوة مطلوبة منك`,
     sub: "تنفذه بنفسك، حدّد كل مرحلة عند اكتمالها", href: `/requests/${r.id}`, cta: "أكمل الخطوة", soft: true }));
   open.filter((r) => r.status === "new" && r.office_id && Date.now() - new Date(r.created_at).getTime() > DAY).forEach((r) => todo.push({ tone: "info", ic: "clock",
     title: `${r.offices?.name || "مقدم الخدمة"} لم يرد بعد`, sub: `${svcs[r.service_id]?.title || ""} · يمكنك إلغاؤه واختيار مقدم خدمة آخر`, href: `/requests/${r.id}`, cta: "عرض الطلب", soft: true }));
@@ -194,7 +205,7 @@ function DocCard({ x, companyId }: { x: any; companyId: string }) {
   const label = { ok: "ساري", warn: "جدّد قريبًا", bad: "منتهي", busy: "قيد التجديد" }[cls];
   const pct = st.left === null ? 100 : st.left <= 0 ? 0 : Math.max(4, Math.min(100, Math.round((st.left / (svc?.validity_days || 365)) * 100)));
   const when = st.left === null ? "بلا تاريخ انتهاء" : st.left < 0 ? `انتهى منذ ${span(-st.left)}` : `ينتهي بعد ${span(st.left)}`;
-  const href = req ? `/requests/${req.id}` : svc?.kind === "renewal" && cls !== "ok" ? `/renew/${d.id}` : `/companies/${companyId}`;
+  const href = req ? `/requests/${req.id}` : (cls !== "ok" && renewHref(svc, d.id)) || `/companies/${companyId}`;
   return (
     <Link className={`doc-card ${cls}`} href={href}>
       <div className="row between"><b>{d.title}</b><span className={`chip stamp ${cls === "busy" ? "warn" : cls}`}>{label}</span></div>
@@ -207,7 +218,8 @@ function DocCard({ x, companyId }: { x: any; companyId: string }) {
 function ReqCard({ r, title }: { r: any; title: string }) {
   const st = sortStages(r.request_stages);
   const cur = st.find((x) => !x.done_at), late = cur && ["accepted", "in_progress"].includes(r.status) ? stageLate(cur) : 0;
-  const chip = r.status === "new" && r.office_id ? ["", "بانتظار رد مقدم الخدمة"] : late ? ["bad", `متأخر ${days(late)}`] : !r.office_id ? ["warn", "خطوة مطلوبة منك"] : ["ok", "في الموعد"];
+  const waiting = awaitingOffers(r);
+  const chip = waiting ? ["warn", "بانتظار العروض"] : r.status === "new" && r.office_id ? ["", "بانتظار رد مقدم الخدمة"] : late ? ["bad", `متأخر ${days(late)}`] : !r.office_id ? ["warn", "خطوة مطلوبة منك"] : ["ok", "في الموعد"];
   const seg = (x: typeof cur) => {
     if (x.done_at) return 100;
     if (x !== cur || !x.started_at) return 0;
@@ -216,11 +228,11 @@ function ReqCard({ r, title }: { r: any; title: string }) {
   return (
     <Link className="req-card" href={`/requests/${r.id}`}>
       <div className="row">
-        <Avatar name={r.offices?.name} self={!r.office_id} />
-        <span className="grow"><b>{title}</b><small>{r.office_id ? r.offices?.name || "" : "تنفذه بنفسك"} · {money(r.quoted_fee)}</small></span>
+        <Avatar name={r.offices?.name} self={!r.office_id && !waiting} />
+        <span className="grow"><b>{title}</b><small>{doerName(r)}{waiting ? "" : ` · ${money(r.quoted_fee)}`}</small></span>
         <span className={`chip ${chip[0]}`}>{chip[1]}</span>
       </div>
-      {st.length > 0 && (
+      {st.length > 0 && !waiting && (
         <div className="segs">
           {st.map((x) => (
             <div key={x.idx} className={`seg ${x === cur ? (late ? "late" : "now") : x.done_at ? "done" : ""}`}>
