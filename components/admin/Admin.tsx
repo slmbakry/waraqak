@@ -6,6 +6,7 @@ import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num } from "@/lib/format";
 import { categories, services, sortStages, stageLate } from "@/lib/data";
 import { PROVIDER_KINDS } from "../Provider";
+import { AdminDisputes } from "../Dispute";
 import { readSession, writeSession } from "@/lib/storage";
 import { fmtSize } from "@/lib/files";
 import { useLoad, useSession } from "../session";
@@ -84,6 +85,7 @@ export function AdminHome() {
         <Kpi ic="users" value={users} label="مستخدم" />
         <Kpi ic="mail" value={pending} label="دعوة معلّقة" />
       </div>
+      <AdminDisputes />
       <section className="panel">
         <div className="row between"><h2>طلبات متأخرة</h2><Link className="btn small" href="/admin/performance">أداء مقدمي الخدمة</Link></div>
         {late.length ? <div className="reqs">{late.map((r) => (

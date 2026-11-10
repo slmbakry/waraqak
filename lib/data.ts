@@ -96,7 +96,13 @@ export function stageLate(stage?: Stage | null) {
 export const sortStages = <T extends Stage>(st?: T[] | null) => (st || []).slice().sort((a, b) => a.idx - b.idx);
 
 export const EVENTS: Record<string, string> = { rated: "قيّم صاحب العمل مقدم الخدمة", created: "تم إنشاء الطلب", accepted: "قبل مقدم الخدمة الطلب", declined: "اعتذر مقدم الخدمة عن الطلب",
-  stage_done: "اكتملت مرحلة", done: "اكتمل الطلب", cancelled: "أُلغي الطلب", note: "رسالة", file: "رُفع ملف", doc_request: "طُلب مستند" };
+  stage_done: "اكتملت مرحلة", done: "اكتمل الطلب", cancelled: "أُلغي الطلب", note: "رسالة", file: "رُفع ملف", doc_request: "طُلب مستند", extended: "مُدّد موعد مرحلة" };
+// What an entry says under its label. An extension stores its days and reason together.
+export const eventNote = (e: { kind: string; note: string | null }) => {
+  if (e.kind !== "extended" || !e.note) return e.note || "";
+  const i = e.note.indexOf("|"), n = Number(e.note.slice(0, i));
+  return `${n === 1 ? "يوم واحد" : n === 2 ? "يومان" : num(n) + (n <= 10 ? " أيام" : " يومًا")}: ${e.note.slice(i + 1)}`;
+};
 // On a request for offers it is the owner who accepts, so the entry reads differently.
 export const eventLabel = (kind: string, mode?: string | null) => (kind === "accepted" && mode === "quote" ? "قُبل العرض وتم الاتفاق" : EVENTS[kind] || kind);
 export const OFFER_STATUS: Record<string, [string, string]> = { sent: ["warn", "بانتظار رد صاحب العمل"], accepted: ["ok", "مقبول"], declined: ["", "اختير عرض آخر"], withdrawn: ["", "مسحوب"] };

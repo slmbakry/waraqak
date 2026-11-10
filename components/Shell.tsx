@@ -131,6 +131,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <summary aria-label="الحساب"><span className="acct-av">{(p.email || "ح").trim().charAt(0).toUpperCase()}</span></summary>
               <div className="acct-menu">
                 <small className="ltr">{p.email}</small>
+                {inside && s.role === "owner" && <Link href="/account"><Icon name="person" size={18} />حسابي</Link>}
                 <button type="button" onClick={async () => { await sb.auth.signOut(); router.push("/"); }}><Icon name="logout" size={18} />خروج</button>
               </div>
             </details>

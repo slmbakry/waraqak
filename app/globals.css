@@ -762,3 +762,9 @@ textarea.ltr-links { font-size: 13.5px; line-height: 1.6; }
 .chips.pick .chip { cursor: pointer; font: inherit; font-family: var(--display); font-size: 13px; font-weight: 600; padding: 4px 12px; border: 1px solid var(--line); background: var(--surface); }
 .chips.pick .chip.ok { border-color: var(--accent); background: var(--accent-soft); }
 button.chip { cursor: pointer; font-family: var(--display); }
+
+/* Account menu link, complaints, stage extension */
+.acct-menu a { display: flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 600; padding: 8px 2px 2px; border-top: 1px solid var(--line); margin-top: 4px; }
+.dispute { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); }
+.dispute p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.extend { padding: 12px 14px; background: var(--sunken); border-radius: 12px; }

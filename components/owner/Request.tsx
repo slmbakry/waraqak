@@ -2,13 +2,14 @@
 // One request, as its owner (or an admin) sees it: status, stages, files, history and the rating.
 import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num } from "@/lib/format";
-import { eventLabel, STATUS, awaitingOffers, services, stageLate } from "@/lib/data";
+import { eventLabel, eventNote, STATUS, awaitingOffers, services, stageLate } from "@/lib/data";
 import { useLoad, useSession } from "../session";
 import { FilesBlock, Head, Kpi, LoadError, Loading, StageRow, finishStage } from "../ui";
 import Requirements from "../Requirements";
 import OwnerConfirm from "./OwnerConfirm";
 import Thread from "../Thread";
 import { ProviderContact, ProviderInfo } from "../Provider";
+import { DisputeBox, type DisputeRow } from "../Dispute";
 import { placeOf } from "@/lib/places";
 import { AgreementBox, NeedList, Offers, type Agreement, type Offer } from "./Quote";
 
@@ -23,14 +24,15 @@ export default function Request({ id }: { id: string }) {
       sb.from("offers").select("*, offices(name)").eq("request_id", id).eq("auto", false).order("fee"),
       sb.from("agreements").select("*").eq("request_id", id).maybeSingle(),
     ]);
+    const { data: disputes } = await sb.from("disputes").select("*").eq("request_id", id).order("created_at");
     if (!r) return { r: null };
     const canRate = r.status === "done" && !!r.office_id;
     const { data: rating } = canRate ? await sb.from("ratings").select("*").eq("request_id", id).maybeSingle() : { data: null };
-    return { r, s: svcs[r.service_id], stages: stages || [], events: events || [], canRate, rating, offers: (offers || []) as Offer[], agreement: agreement as Agreement | null };
+    return { r, s: svcs[r.service_id], stages: stages || [], events: events || [], canRate, rating, offers: (offers || []) as Offer[], agreement: agreement as Agreement | null, disputes: (disputes || []) as DisputeRow[] };
   }, [id]);
   if (error) return <LoadError />;
   if (!data) return <Loading />;
-  const { r, s, stages, events, canRate, rating, offers, agreement } = data;
+  const { r, s, stages, events, canRate, rating, offers, agreement, disputes } = data;
   if (!r) return <section className="panel"><p>هذا الطلب غير موجود.</p></section>;
 
   const waiting = awaitingOffers(r);          // a request for offers nobody has been chosen for yet
@@ -75,7 +77,8 @@ export default function Request({ id }: { id: string }) {
         </div>
       )}
       {!self && !waiting && r.status === "new" && <p className="alert">الطلب بانتظار قبول مقدم الخدمة.</p>}
-      {r.escalated_at && open && <p className="alert">تم إبلاغ الإدارة بهذا التأخير، وهي تتابعه مع مقدم الخدمة.</p>}
+      {disputes.some((d) => d.status === "open") ? <p className="alert">شكواك عند الإدارة الآن، وسيصلك ردها هنا وفي التنبيهات.</p>
+        : r.escalated_at && open && <p className="alert">تم إبلاغ الإدارة بهذا التأخير، وهي تتابعه مع مقدم الخدمة.</p>}
       <div className="split">
         <div className="split-main">
           {r.status === "done" && role === "owner" && <OwnerConfirm companyId={r.company_id} service={s} />}
@@ -105,11 +108,12 @@ export default function Request({ id }: { id: string }) {
           )}
           {r.status !== "done" && <section className="panel"><Requirements serviceId={s.id} kind={s.place_kind} place={placeOf(r.companies, s.place_kind)} /></section>}
           <section className="panel"><FilesBlock requestId={id} /></section>
+          <DisputeBox requestId={id} list={disputes} canOpen={role === "owner" && !!r.office_id && ["accepted", "in_progress", "done"].includes(r.status)} onChange={reload} />
           <section className="panel"><h2>سجل النشاط</h2>
             {events.filter((e) => !["note", "doc_request"].includes(e.kind)).reverse().map((e) => (
               <div key={e.id} className="feed">
                 <span className={`dot ${["declined", "cancelled"].includes(e.kind) ? "bad" : e.kind === "note" || e.kind === "file" ? "warn" : ""}`} aria-hidden="true" />
-                <span><b>{eventLabel(e.kind, r.mode)}</b><small>{e.note ? e.note + " · " : ""}{fmtDate(e.created_at)}</small></span>
+                <span><b>{eventLabel(e.kind, r.mode)}</b><small>{e.note ? eventNote(e) + " · " : ""}{fmtDate(e.created_at)}</small></span>
               </div>
             ))}
           </section>

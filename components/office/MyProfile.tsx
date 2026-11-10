@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { sb } from "@/lib/supabase";
 import { GOVERNORATES } from "@/lib/places";
+import { fmtDate, num } from "@/lib/format";
 import { useLoad, useSession } from "../session";
 import { Head, Icon, LoadError, Loading } from "../ui";
 import { PROVIDER_KINDS, ProviderInfo } from "../Provider";
@@ -14,16 +15,18 @@ export default function MyProfile() {
   const [areas, setAreas] = useState<string[] | null>(null);
   const { data, error } = useLoad(async () => {
     if (!officeId) return null;
-    const [{ data: o }, { data: c }] = await Promise.all([
+    const [{ data: o }, { data: c }, { data: reviews }, { data: perf }] = await Promise.all([
       sb.from("offices").select("id,name,kind,license_no,about,areas,verified").eq("id", officeId).maybeSingle(),
       sb.from("office_contacts").select("phone").eq("office_id", officeId).maybeSingle(),
+      sb.from("ratings").select("professionalism,speed,comment,created_at").eq("office_id", officeId).order("created_at", { ascending: false }).limit(8),
+      sb.rpc("office_stats"),
     ]);
-    return { o, phone: c?.phone || "" };
+    return { o, phone: c?.phone || "", reviews: reviews || [], perf: (perf || []).find((x: { office_id: string }) => x.office_id === officeId) };
   }, [officeId, n]);
   if (!officeId) return <section className="panel"><p>{profile.role === "admin" ? "اختر مقدم الخدمة الذي تريد التجربة به من الشريط في الأعلى." : "حسابك غير مرتبط بمقدم خدمة بعد. تواصل مع مدير المنصة."}</p></section>;
   if (error) return <LoadError />;
   if (!data) return <Loading />;
-  const { o, phone } = data;
+  const { o, phone, reviews, perf } = data;
   if (!o) return <LoadError />;
   const picked = areas ?? o.areas ?? [];
   const flip = (g: string) => setAreas(picked.includes(g) ? picked.filter((x) => x !== g) : [...picked, g]);
@@ -57,7 +60,19 @@ export default function MyProfile() {
             <small className="note">{picked.length ? "اضغط على المحافظة لإضافتها أو إزالتها." : "لم تختر شيئًا، فتظهر كأنك تعمل في كل المحافظات."}</small></div>
           <button className="btn primary" type="submit">حفظ</button>
         </form>
-        <aside className="split-side"><section className="panel"><h2>كما يراك صاحب العمل</h2><ProviderInfo key={n} officeId={officeId} /></section></aside>
+        <aside className="split-side">
+          <section className="panel"><h2>كما يراك صاحب العمل</h2><ProviderInfo key={n} officeId={officeId} /></section>
+          <section className="panel"><h2>أداؤك</h2>
+            <div className="kv"><span>ردودك على الطلبات</span><b>{perf?.answered ? `${num(perf.accepted)} قبول من ${num(perf.answered)}` : "لا توجد بعد"}</b></div>
+            <div className="kv"><span>متوسط زمن ردك</span><b>{perf?.reply_hours != null ? `${num(perf.reply_hours)} ساعة` : "لا يوجد بعد"}</b></div>
+            <small className="note">نسبة الالتزام بالموعد تُحسب من تاريخ قبولك الطلب إلى اكتماله، مقارنة بالمدة التي أعلنتها.</small>
+          </section>
+          <section className="panel"><h2>آخر التقييمات</h2>
+            {reviews.length ? reviews.map((x, i) => (
+              <div key={i} className="feed"><span className="dot" aria-hidden="true" /><span><b>احترافية {num(x.professionalism)} · سرعة {num(x.speed)}</b><small>{x.comment ? x.comment + " · " : ""}{fmtDate(x.created_at)}</small></span></div>
+            )) : <p className="empty">لا توجد تقييمات بعد.</p>}
+          </section>
+        </aside>
       </div>
     </>
   );

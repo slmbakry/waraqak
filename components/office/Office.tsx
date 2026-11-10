@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { sb } from "@/lib/supabase";
 import { days, fmtDate, money } from "@/lib/format";
-import { eventLabel, OFFER_STATUS, STATUS, services, sortStages, stageLate } from "@/lib/data";
+import { eventLabel, eventNote, OFFER_STATUS, STATUS, services, sortStages, stageLate } from "@/lib/data";
 import { useLoad, useSession } from "../session";
 import { FilesBlock, Head, Kpi, LoadError, Loading, StageRow, finishStage } from "../ui";
 import Requirements from "../Requirements";
 import { placeOf } from "@/lib/places";
 import QuoteJob from "./QuoteJob";
 import Thread from "../Thread";
+import { DisputeNotice, type DisputeRow } from "../Dispute";
 import { NeedList } from "../owner/Quote";
 
 function NoOffice() {
@@ -98,7 +99,8 @@ export function Job({ id }: { id: string }) {
   const { officeId, uid, toast } = useSession();
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState("");
-  const [showMail, setShowMail] = useState(false);
+  const [phone, setPhone] = useState<string | null | undefined>(undefined);
+  const [extend, setExtend] = useState(false);
   const { data, error, reload } = useLoad(async () => {
     if (!officeId) return null;
     const svcs = await services();
@@ -112,14 +114,14 @@ export function Job({ id }: { id: string }) {
     // Either this provider's own job, or a request for offers still open to it.
     const openQuote = !!r && r.mode === "quote" && !r.office_id && r.status === "new";
     if (!r || (r.office_id !== officeId && !openQuote)) return { r: null };
-    if (openQuote) return { r, s: svcs[r.service_id], openQuote, offer, stages: [], events: [], owner: null, agreement: null };
-    const { data: owner } = await sb.from("profiles").select("email").eq("id", r.owner_id).maybeSingle();
-    return { r, s: svcs[r.service_id], stages: stages || [], events: events || [], owner, openQuote: false, offer: null, agreement };
+    if (openQuote) return { r, s: svcs[r.service_id], openQuote, offer, stages: [], events: [], agreement: null, disputes: [] as DisputeRow[] };
+    const { data: disputes } = await sb.from("disputes").select("*").eq("request_id", id).order("created_at");
+    return { r, s: svcs[r.service_id], stages: stages || [], events: events || [], openQuote: false, offer: null, agreement, disputes: (disputes || []) as DisputeRow[] };
   }, [id, officeId]);
   if (!officeId) return <NoOffice />;
   if (error) return <LoadError />;
   if (!data) return <Loading />;
-  const { r, s, stages, events, owner, agreement } = data;
+  const { r, s, stages, events, agreement, disputes } = data;
   if (!r) return <section className="panel"><p>هذا الطلب غير متاح لك الآن.</p><Link className="btn" href="/">العودة إلى الطلبات</Link></section>;
 
   if (data.openQuote) return <QuoteJob r={r} s={s} mine={data.offer} onChange={reload} />;
@@ -144,9 +146,18 @@ export function Job({ id }: { id: string }) {
     await log("declined", why.trim());
     toast("تم تسجيل الاعتذار"); router.push("/");
   };
+  const showPhone = async () => setPhone((await sb.from("owner_contacts").select("phone").eq("user_id", r.owner_id).maybeSingle()).data?.phone || null);
+  const addDays = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget), reason = String(f.get("reason") || "").trim();
+    if (reason.length < 5) return toast("اكتب سبب التمديد ليعرفه صاحب العمل", true);
+    const { error } = await sb.rpc("extend_stage", { p_stage: stages[cur].id, p_days: Number(f.get("days")), p_reason: reason });
+    if (error) return toast("تعذّر تمديد الموعد", true);
+    setExtend(false); toast("تم تمديد موعد المرحلة، وأُبلغ صاحب العمل بالسبب"); reload();
+  };
   const finish = async (st) => {
     const { error } = await finishStage(st);
-    if (error) return toast("تعذّر تحديث المرحلة", true);
+    if (error) return toast(error.message.includes("delivery_file_required") ? "ارفع مستند التسليم في قسم الملفات أولًا، ثم أنهِ المرحلة الأخيرة" : "تعذّر تحديث المرحلة", true);
     toast(stages.filter((x) => !x.done_at).length === 1 ? "اكتمل الطلب بالكامل" : "اكتملت المرحلة"); reload();
   };
   return (
@@ -168,11 +179,24 @@ export function Job({ id }: { id: string }) {
           <div className="track">
             {stages.map((x, i) => <StageRow key={x.id} stage={x} isNow={i === cur && isWorking} onFinish={i === cur && isWorking ? () => finish(x) : undefined} />)}
           </div>
+          {isWorking && cur >= 0 && (extend ? (
+            <form className="stack extend" onSubmit={addDays}>
+              <div className="form-row two">
+                <div className="field"><label htmlFor="ex-days">كم يومًا تضيف إلى «{stages[cur].title}»؟</label><input id="ex-days" name="days" type="number" min="1" max="30" required defaultValue={2} /></div>
+                <div className="field"><label htmlFor="ex-why">السبب، ويقرؤه صاحب العمل</label><input id="ex-why" name="reason" required maxLength={500} /></div>
+              </div>
+              <small className="note">التمديد يغيّر موعد هذه المرحلة فقط. نسبة التزامك بالمواعيد تُحسب على المدة التي أعلنتها في البداية.</small>
+              <div className="row"><button className="btn small primary" type="submit">تمديد الموعد</button><button className="btn small" type="button" onClick={() => setExtend(false)}>إلغاء</button></div>
+            </form>
+          ) : <button className="linkish" type="button" onClick={() => setExtend(true)}>أحتاج وقتًا إضافيًا لهذه المرحلة</button>)}
+          {isWorking && cur === stages.length - 1 && <small className="note">إنهاء المرحلة الأخيرة يحتاج مستند تسليم مرفوعًا في قسم الملفات.</small>}
         </section>
         {r.status !== "new" && <Thread requestId={id} events={events} other="صاحب العمل" asOffice closed={r.status === "cancelled"} onChange={reload} />}
         </div>
+        <div className="stack">
+        <DisputeNotice list={disputes} />
         <section className="panel"><h2>التفاصيل</h2>
-          <div className="kv"><span>صاحب العمل</span>{!owner?.email ? <small className="note">يظهر بريده بعد قبول الطلب</small> : showMail ? <b className="ltr">{owner.email}</b> : <button className="linkish" type="button" onClick={() => setShowMail(true)}>أحتاج بريده الإلكتروني</button>}</div>
+          <div className="kv"><span>هاتف صاحب العمل</span>{!isWorking && r.status !== "done" ? <small className="note">يتاح بعد قبول الطلب</small> : phone === undefined ? <button className="linkish" type="button" onClick={showPhone}>أحتاج رقم الهاتف</button> : phone ? <a className="ltr" href={`tel:${phone}`}>{phone}</a> : <small className="note">لم يسجل رقمًا. تواصل معه من الرسائل.</small>}</div>
           {r.companies?.legal_form && <div className="kv"><span>الشكل القانوني</span><b>{r.companies.legal_form}</b></div>}
           <div className="kv"><span>{r.mode === "quote" ? "السعر المتفق عليه" : "التكلفة المعلنة"}</span><b>{money(r.quoted_fee)}</b></div>
           <div className="kv"><span>المدة المعلنة</span><b>{days(r.quoted_days || 0)}</b></div>
@@ -182,8 +206,9 @@ export function Job({ id }: { id: string }) {
           {s && <Requirements serviceId={s.id} kind={s.place_kind} place={placeOf(r.companies, s.place_kind)} />}
           <div><FilesBlock requestId={id} /></div>
           <h3 className="sub">سجل النشاط</h3>
-          {events.filter((e) => !["note", "doc_request"].includes(e.kind)).map((e) => <div key={e.id} className="kv"><span>{eventLabel(e.kind, r.mode)}{e.note ? ": " + e.note : ""}</span><small>{fmtDate(e.created_at)}</small></div>)}
+          {events.filter((e) => !["note", "doc_request"].includes(e.kind)).map((e) => <div key={e.id} className="kv"><span>{eventLabel(e.kind, r.mode)}{e.note ? ": " + eventNote(e) : ""}</span><small>{fmtDate(e.created_at)}</small></div>)}
         </section>
+        </div>
       </div>
     </>
   );
