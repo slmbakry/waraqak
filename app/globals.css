@@ -722,3 +722,17 @@ textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3
 .linkish.report { justify-self: start; font-size: 13.5px; color: var(--muted); }
 .linkish.report:hover { color: var(--bad); }
 textarea.ltr-links { font-size: 13.5px; line-height: 1.6; }
+
+/* Messages inside a request */
+.msgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-height: 460px; overflow-y: auto; }
+.msg { display: grid; gap: 2px; justify-items: start; }
+.msg.mine { justify-items: end; }
+.msg-day { justify-self: center; font-size: 12.5px; color: var(--muted); background: var(--sunken); padding: 1px 12px; border-radius: 999px; margin: 6px 0; }
+.bubble { max-width: min(520px, 88%); padding: 10px 14px; border-radius: 16px; border-start-start-radius: 4px; background: var(--sunken); display: grid; gap: 6px; }
+.msg.mine .bubble { background: var(--accent-soft); border-start-start-radius: 16px; border-start-end-radius: 4px; }
+.bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble b { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--ink-2); }
+.msg.doc_request .bubble { background: var(--gold-soft); border: 1px solid var(--gold); }
+.msg.doc_request .bubble b { color: var(--gold-ink); }
+.bubble .btn { justify-self: start; }
+.msg-form { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }

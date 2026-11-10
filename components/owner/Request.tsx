@@ -7,6 +7,7 @@ import { useLoad, useSession } from "../session";
 import { Avatar, FilesBlock, Head, Kpi, LoadError, Loading, StageRow, finishStage } from "../ui";
 import Requirements from "../Requirements";
 import OwnerConfirm from "./OwnerConfirm";
+import Thread from "../Thread";
 import { placeOf } from "@/lib/places";
 import { AgreementBox, NeedList, Offers, type Agreement, type Offer } from "./Quote";
 
@@ -91,6 +92,7 @@ export default function Request({ id }: { id: string }) {
             </div>
             {r.status === "new" && <button className="btn danger small" type="button" onClick={cancel}>إلغاء الطلب</button>}
           </section>}
+          {!self && !waiting && <Thread requestId={id} events={events} other={r.offices?.name || "مقدم الخدمة"} asOffice={false} closed={r.status === "cancelled"} onChange={reload} />}
         </div>
         <aside className="split-side">
           {r.mode === "quote" && <section className="panel"><h2>ما طلبته</h2><NeedList fields={s.need_fields || []} need={r.need} /></section>}
@@ -103,7 +105,7 @@ export default function Request({ id }: { id: string }) {
           {r.status !== "done" && <section className="panel"><Requirements serviceId={s.id} kind={s.place_kind} place={placeOf(r.companies, s.place_kind)} /></section>}
           <section className="panel"><FilesBlock requestId={id} /></section>
           <section className="panel"><h2>سجل النشاط</h2>
-            {events.slice().reverse().map((e) => (
+            {events.filter((e) => !["note", "doc_request"].includes(e.kind)).reverse().map((e) => (
               <div key={e.id} className="feed">
                 <span className={`dot ${["declined", "cancelled"].includes(e.kind) ? "bad" : e.kind === "note" || e.kind === "file" ? "warn" : ""}`} aria-hidden="true" />
                 <span><b>{eventLabel(e.kind, r.mode)}</b><small>{e.note ? e.note + " · " : ""}{fmtDate(e.created_at)}</small></span>

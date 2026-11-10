@@ -11,6 +11,7 @@ import { FilesBlock, Head, Kpi, LoadError, Loading, StageRow, finishStage } from
 import Requirements from "../Requirements";
 import { placeOf } from "@/lib/places";
 import QuoteJob from "./QuoteJob";
+import Thread from "../Thread";
 import { NeedList } from "../owner/Quote";
 
 function NoOffice() {
@@ -97,7 +98,6 @@ export function Job({ id }: { id: string }) {
   const { officeId, uid, toast } = useSession();
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState("");
-  const [note, setNote] = useState("");
   const { data, error, reload } = useLoad(async () => {
     if (!officeId) return null;
     const svcs = await services();
@@ -148,13 +148,6 @@ export function Job({ id }: { id: string }) {
     if (error) return toast("تعذّر تحديث المرحلة", true);
     toast(stages.filter((x) => !x.done_at).length === 1 ? "اكتمل الطلب بالكامل" : "اكتملت المرحلة"); reload();
   };
-  const sendNote = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { error } = await log("note", note.trim());
-    if (error) return toast("تعذّر إرسال الملاحظة", true);
-    setNote(""); toast("تم إرسال الملاحظة"); reload();
-  };
-
   return (
     <>
       <Head back={["/", "الطلبات"]} eyebrow={r.companies?.name || ""} title={s?.title || r.service_id}>
@@ -168,18 +161,15 @@ export function Job({ id }: { id: string }) {
         </section>
       )}
       <div className="grid2 wide">
+        <div className="stack">
         <section className="panel">
           <div className="row between"><h2>المراحل</h2><span className={`chip ${STATUS[r.status][0]}`}>{STATUS[r.status][1]}</span></div>
           <div className="track">
             {stages.map((x, i) => <StageRow key={x.id} stage={x} isNow={i === cur && isWorking} onFinish={i === cur && isWorking ? () => finish(x) : undefined} />)}
           </div>
-          {isWorking && (
-            <form className="stack" onSubmit={sendNote}>
-              <div className="field"><label htmlFor="note">ملاحظة لصاحب العمل</label><input id="note" required value={note} onChange={(e) => setNote(e.target.value)} /></div>
-              <button className="btn small" type="submit">إرسال الملاحظة</button>
-            </form>
-          )}
         </section>
+        {r.status !== "new" && <Thread requestId={id} events={events} other="صاحب العمل" asOffice closed={r.status === "cancelled"} onChange={reload} />}
+        </div>
         <section className="panel"><h2>التفاصيل</h2>
           <div className="kv"><span>صاحب العمل</span><b className="ltr">{owner?.email || ""}</b></div>
           {r.companies?.legal_form && <div className="kv"><span>الشكل القانوني</span><b>{r.companies.legal_form}</b></div>}
@@ -191,7 +181,7 @@ export function Job({ id }: { id: string }) {
           {s && <Requirements serviceId={s.id} kind={s.place_kind} place={placeOf(r.companies, s.place_kind)} />}
           <div><FilesBlock requestId={id} /></div>
           <h3 className="sub">سجل النشاط</h3>
-          {events.map((e) => <div key={e.id} className="kv"><span>{eventLabel(e.kind, r.mode)}{e.note ? ": " + e.note : ""}</span><small>{fmtDate(e.created_at)}</small></div>)}
+          {events.filter((e) => !["note", "doc_request"].includes(e.kind)).map((e) => <div key={e.id} className="kv"><span>{eventLabel(e.kind, r.mode)}{e.note ? ": " + e.note : ""}</span><small>{fmtDate(e.created_at)}</small></div>)}
         </section>
       </div>
     </>
