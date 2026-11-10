@@ -3,7 +3,7 @@
 // company file and requests, all for the company being looked at.
 import Link from "next/link";
 import { sb } from "@/lib/supabase";
-import { DAY, days, fmtDate, money, today } from "@/lib/format";
+import { DAY, days, fmtDate, money, num, today } from "@/lib/format";
 import { STATUS, docStatus, services, sortStages, stageLate } from "@/lib/data";
 import { CompanySwitch, useCompanies, type Company } from "../companies";
 import { applies, missingAnswers, occurrences, type Occurrence, type Profile, type Rule } from "@/lib/obligations";
@@ -122,7 +122,7 @@ export function Obligations() {
         <section key={label} className="panel"><h2>{label}</h2>
           <div className="ob-group">{g.map((o, i) => (
             <div key={i} className={`ob-row ${o.tone}`}>
-              <span className="ob-date">{o.date.getDate()}<small>{o.date.toLocaleDateString("ar-EG", { month: "short", year: "numeric" })}</small></span>
+              <span className="ob-date">{num(o.date.getDate())}<small>{o.date.toLocaleDateString("ar-EG", { month: "short", year: "numeric" })}</small></span>
               <span className="grow">
                 <b>{o.title}</b><small className="note">{o.sub}</small>
                 {o.occ && (

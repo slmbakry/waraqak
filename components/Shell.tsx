@@ -103,12 +103,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
 
   // Before sign-in there is no app around the page: only the "coming soon" face.
-  if (s.ready && !p) return <Login />;
+  if (!s.ready) return <main className="boot"><Loading /></main>;
+  if (!p) return <Login />;
 
   let body: React.ReactNode;
-  if (!s.ready) body = <Loading />;
-  else if (!p) body = <Login />;
-  else if (s.recovery) body = <SetPassword onDone={() => redraw((x) => x + 1)} />;
+  if (s.recovery) body = <SetPassword onDone={() => redraw((x) => x + 1)} />;
   else if (!p.role) body = <NotInvited />;
   else if (!p.consent_at) body = <Consent />;
   else if (needsPassword) body = <SetPassword onDone={() => redraw((x) => x + 1)} />;

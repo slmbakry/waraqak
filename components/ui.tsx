@@ -51,7 +51,20 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
   );
 }
 
-export const Loading = () => <div className="loading">جارٍ التحميل</div>;
+// Loading is the logo drawing itself: the green ring closes, then the page appears inside it.
+export const Loading = () => (
+  <div className="loading" role="status">
+    <svg className="seal-load" viewBox="0 0 240 240" width="76" height="76" aria-hidden="true">
+      <circle className="track" cx="120" cy="120" r="100.8" fill="none" strokeWidth="24" />
+      <circle className="arc" cx="120" cy="120" r="100.8" fill="none" strokeWidth="24" strokeLinecap="round" transform="rotate(-90 120 120)" />
+      <g className="pg">
+        <path className="sheet" d="M104.64,64.8 H160.8 Q168,64.8 168,72 V168 Q168,175.2 160.8,175.2 H79.2 Q72,175.2 72,168 V97.44 Z" />
+        <path className="fold" d="M72,97.44 L104.64,64.8 V97.44 Z" />
+      </g>
+    </svg>
+    <span className="sr-only">جارٍ التحميل</span>
+  </div>
+);
 export const LoadError = () => <section className="panel"><p>حدثت مشكلة أثناء تحميل الصفحة. حدّث الصفحة وحاول مرة أخرى.</p></section>;
 
 export function Kpi({ ic, tone = "", value, label }: { ic: string; tone?: string; value: React.ReactNode; label: React.ReactNode }) {
