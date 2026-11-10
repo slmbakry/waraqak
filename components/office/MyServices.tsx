@@ -65,9 +65,9 @@ export default function MyServices() {
             if (!list.length) return null;
             return (
               <section key={c.id} className="panel"><h2>{c.title}</h2>
-                <div className="table-wrap"><table><thead><tr><th>الخدمة</th><th>الرسوم الحكومية</th><th>أتعابك بالجنيه</th><th>مدتك بالأيام</th></tr></thead><tbody>
+                <div className="table-wrap"><table className="prices"><thead><tr><th>الخدمة</th><th>الرسوم الحكومية</th><th>أتعابك بالجنيه</th><th>مدتك بالأيام</th></tr></thead><tbody>
                   {list.map((s) => s.mode === "quote" ? (
-                    <tr key={s.id}><td>{s.title}</td><td colSpan={3}><span className="chip warn">تُسعَّر بعرض لكل طلب</span></td></tr>
+                    <tr key={s.id} className="q"><td>{s.title}</td><td colSpan={3}><span className="chip warn">تُسعَّر بعرض لكل طلب</span></td></tr>
                   ) : (
                     <tr key={s.id}><td>{s.title}</td><td>{money(s.gov_fee)}</td>
                       <td><input className="mini" type="number" min="0" step="50" name={`fee-${s.id}`} defaultValue={cur[s.id]?.fee ?? ""} aria-label={`أتعاب ${s.title}`} /></td>

@@ -289,7 +289,7 @@ export function Prices({ officeId }: { officeId: string }) {
         <p>اكتب أتعاب مقدم الخدمة ومدته لكل خدمة يقدمها. الخدمة التي تتركها فارغة لن تظهر لصاحب العمل مع مقدم الخدمة هذا. وتُحسب الرسوم الحكومية تلقائيًا.</p>
       </Head>
       <form className="panel" onSubmit={save}>
-        <div className="table-wrap"><table><thead><tr><th>الخدمة</th><th>الرسوم الحكومية</th><th>الأتعاب بالجنيه</th><th>المدة بالأيام</th></tr></thead><tbody>
+        <div className="table-wrap"><table className="prices"><thead><tr><th>الخدمة</th><th>الرسوم الحكومية</th><th>الأتعاب بالجنيه</th><th>المدة بالأيام</th></tr></thead><tbody>
           {Object.values(svcs).map((s) => (
             <tr key={s.id}><td>{s.title}<br /><small className="note">{catOf[s.category_id] || ""}</small></td><td>{money(s.gov_fee)}</td>
               <td><input className="mini" type="number" min="0" step="50" name={`fee-${s.id}`} defaultValue={cur[s.id]?.fee ?? ""} /></td>
