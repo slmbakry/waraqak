@@ -1,5 +1,5 @@
 "use client";
-// Owner dashboard. One company at a time: a navy summary band, what needs the
+// Owner dashboard. One company at a time: a navy cover card, what needs the
 // owner now, documents with how much validity is left, and requests stage by stage.
 import Link from "next/link";
 import { sb } from "@/lib/supabase";
@@ -53,7 +53,7 @@ export default function OwnerHome({ companyId }: { companyId?: string }) {
         <p>إذا كان لديك مشروع جديد، فسيعرض لك الدليل خطواتك. وإذا كانت لديك شركة قائمة، فأضفها بمستنداتها وتواريخ انتهائها، وستذكّرك المنصة قبل كل تجديد.</p>
       </Head>
       <div className="choices">
-        <Link className="choice" href="/guide"><span className="tile-ic"><Icon name="pulse" size={24} /></span><h3>لدي فكرة أو مشروع غير مسجل</h3><p>أسئلة قليلة، ثم خريطة خطواتك بالتكلفة والمدة.</p></Link>
+        <Link className="choice" href="/guide"><span className="tile-ic gold"><Icon name="idea" size={24} /></span><h3>لدي فكرة أو مشروع غير مسجل</h3><p>أسئلة قليلة، ثم خريطة خطواتك بالتكلفة والمدة.</p></Link>
         <Link className="choice" href="/companies/new"><span className="tile-ic ok"><Icon name="building" size={24} /></span><h3>لدي شركة قائمة</h3><p>أضف مستنداتها، وتابع تجديداتها من مكان واحد.</p></Link>
       </div>
     </>
@@ -125,7 +125,7 @@ export default function OwnerHome({ companyId }: { companyId?: string }) {
       </section>
       <div className="kpis">
         <Kpi ic="docOk" tone="ok" value={healthy} label="مستندات سارية" />
-        <Kpi ic="clock" tone="warn" value={count("warn") + count("busy")} label="تجديد قريب" />
+        <Kpi ic="calendar" tone="warn" value={count("warn") + count("busy")} label="تجديد قريب" />
         <Kpi ic="alert" tone="bad" value={count("bad")} label="منتهي" />
         <Kpi ic="list" value={open.length} label="طلبات قيد التنفيذ" />
       </div>
@@ -197,7 +197,7 @@ function DocCard({ x, companyId }: { x: any; companyId: string }) {
   const href = req ? `/requests/${req.id}` : svc?.kind === "renewal" && cls !== "ok" ? `/renew/${d.id}` : `/companies/${companyId}`;
   return (
     <Link className={`doc-card ${cls}`} href={href}>
-      <div className="row between"><b>{d.title}</b><span className={`chip ${cls === "busy" ? "warn" : cls}`}>{label}</span></div>
+      <div className="row between"><b>{d.title}</b><span className={`chip stamp ${cls === "busy" ? "warn" : cls}`}>{label}</span></div>
       <div className="bar-v" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
       <small>{when}{req ? ` · ${req.offices?.name || "تجدده بنفسك"}` : cls === "ok" && st.startOn ? ` · التذكير ${fmtDate(st.startOn)}` : ""}</small>
     </Link>

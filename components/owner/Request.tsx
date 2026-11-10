@@ -54,7 +54,7 @@ export default function Request({ id }: { id: string }) {
         <p>{self ? "تنفذ هذا الطلب بنفسك، ويمكنك تحديد كل مرحلة عند اكتمالها." : `ينفذه ${r.offices?.name || ""}. ومقدم الخدمة هو من يحدّث المراحل.`}</p>
       </Head>
       <div className="kpis">
-        <Kpi ic={r.status === "done" ? "check" : "pulse"} tone={tone} value={label} label="الحالة" />
+        <Kpi ic={r.status === "done" ? "check" : "stamp"} tone={tone} value={label} label="الحالة" />
         <Kpi ic="list" tone={lateNow ? "bad" : ""} value={`${num(doneCount)} من ${num(stages.length)}`} label={lateNow ? `المرحلة متأخرة ${days(lateNow)}` : "مراحل مكتملة"} />
         <Kpi ic="chart" tone="ok" value={money(r.quoted_fee)} label="التكلفة المعلنة" />
         <Kpi ic="clock" tone="warn" value={r.status === "done" ? fmtDate(r.completed_at) : fmtDate(due)} label={r.status === "done" ? "اكتمل في" : "الموعد المتوقع"} />

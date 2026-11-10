@@ -11,10 +11,11 @@ import { Consent, Login, NotInvited, SetPassword } from "./auth";
 import { CompaniesProvider } from "./companies";
 import FeedbackButton from "./Feedback";
 
-const NAV: Record<Role, [string, string, string][]> = {
-  admin: [["/", "الرئيسية", "home"], ["/admin/performance", "الأداء", "chart"], ["/admin/invites", "الدعوات", "mail"], ["/admin/offices", "مقدمو الخدمة", "building"], ["/admin/companies", "الشركات", "doc"], ["/admin/requirements", "المتطلبات", "docOk"], ["/admin/feedback", "الملاحظات", "mail"], ["/admin/users", "المستخدمون", "users"]],
-  owner: [["/", "الرئيسية", "home"], ["/obligations", "الالتزامات", "clock"], ["/actions", "الإجراءات", "pulse"], ["/files", "ملف الشركة", "doc"], ["/requests", "طلباتي", "list"]],
-  office: [["/", "الطلبات", "list"], ["/office/requirements", "المتطلبات", "docOk"], ["/registry", "دليل الأنشطة", "pulse"]],
+// Each entry: path, label, icon, and "cta" for the one action that starts something new.
+const NAV: Record<Role, [string, string, string, string?][]> = {
+  admin: [["/", "الرئيسية", "home"], ["/admin/performance", "الأداء", "chart"], ["/admin/invites", "الدعوات", "send"], ["/admin/offices", "مقدمو الخدمة", "building"], ["/admin/companies", "الشركات", "folder"], ["/admin/requirements", "المتطلبات", "shield"], ["/admin/feedback", "الملاحظات", "chat"], ["/admin/users", "المستخدمون", "users"]],
+  owner: [["/", "الرئيسية", "home"], ["/obligations", "الالتزامات", "calendar"], ["/actions", "خدمة جديدة", "plus", "cta"], ["/files", "ملف الشركة", "folder"], ["/requests", "طلباتي", "list"]],
+  office: [["/", "الطلبات", "list"], ["/office/requirements", "المتطلبات", "shield"], ["/registry", "دليل الأنشطة", "book"]],
 };
 
 function isCurrent(href: string, path: string) {
@@ -119,13 +120,22 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <div className="bar-in">
           <Link className="brand" href="/" aria-label="ورقك"><img src="/logo-header-dark.svg" alt="ورقك" width={104} height={40} /></Link>
           <span className="pilot-chip">نسخة تجريبية</span>
-          {inside && <Bell />}
-          {p && <button className="btn ghost" id="logout" type="button" onClick={async () => { await sb.auth.signOut(); router.push("/"); }}>خروج</button>}
-          <nav className="nav" aria-label="التنقل">
-            {inside && NAV[s.role].map(([href, label, ic]) => (
-              <Link key={href} href={href} aria-current={isCurrent(href, path) ? "page" : undefined}><Icon name={ic} size={22} />{label}</Link>
+          <nav className={"nav" + (inside && NAV[s.role].length > 5 ? " many" : "")} aria-label="التنقل">
+            {inside && NAV[s.role].map(([href, label, ic, kind]) => (
+              <Link key={href} href={href} className={kind} aria-current={isCurrent(href, path) ? "page" : undefined}><Icon name={ic} size={22} />{label}</Link>
             ))}
           </nav>
+          <span className="bar-gap" />
+          {inside && <Bell />}
+          {p && (
+            <details className="acct">
+              <summary aria-label="الحساب"><span className="acct-av">{(p.email || "ح").trim().charAt(0).toUpperCase()}</span></summary>
+              <div className="acct-menu">
+                <small className="ltr">{p.email}</small>
+                <button type="button" onClick={async () => { await sb.auth.signOut(); router.push("/"); }}><Icon name="logout" size={18} />خروج</button>
+              </div>
+            </details>
+          )}
         </div>
       </header>
       {p?.role === "admin" && p.consent_at && <PreviewBar />}

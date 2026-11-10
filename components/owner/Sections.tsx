@@ -235,7 +235,7 @@ export function Actions() {
       </Head>
       <section className="panel"><h2>البداية</h2>
         <div className="section-grid">
-          <Link className="path-card" href="/guide"><span className="tile-ic"><Icon name="pulse" /></span><b>لدي فكرة وأريد تأسيس مشروع</b>
+          <Link className="path-card" href="/guide"><span className="tile-ic gold"><Icon name="idea" /></span><b>لدي فكرة وأريد تأسيس مشروع</b>
             <small className="note">أسئلة قليلة تحدد الكيان المناسب، ثم خريطة خطواتك بالتكلفة والمدة.</small></Link>
           <Link className="path-card" href="/companies/new"><span className="tile-ic ok"><Icon name="building" /></span><b>لدي شركة قائمة وأريد إضافتها</b>
             <small className="note">أضف مستنداتها وتواريخ انتهائها لتصلك التذكيرات.</small></Link>

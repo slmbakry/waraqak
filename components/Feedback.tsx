@@ -24,7 +24,7 @@ export default function FeedbackButton() {
   };
   return (
     <>
-      <button className="fb-btn" type="button" onClick={() => setOpen(true)} aria-haspopup="dialog"><Icon name="mail" size={18} />ملاحظاتك</button>
+      <button className="fb-btn" type="button" onClick={() => setOpen(true)} aria-haspopup="dialog"><Icon name="chat" size={18} /><span>ملاحظاتك</span></button>
       {open && (
         <div className="fb-back" role="presentation" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <section className="panel fb-box" role="dialog" aria-modal="true" aria-labelledby="fb-t">
