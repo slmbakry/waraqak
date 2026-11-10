@@ -5,12 +5,13 @@ import { useState } from "react";
 import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num } from "@/lib/format";
 import { categories, services, sortStages, stageLate } from "@/lib/data";
+import { PROVIDER_KINDS } from "../Provider";
 import { readSession, writeSession } from "@/lib/storage";
 import { fmtSize } from "@/lib/files";
 import { useLoad, useSession } from "../session";
 import { Head, Kpi, LoadError, Loading } from "../ui";
 
-const PROVIDER_KINDS: Record<string, string> = { accounting: "مكتب محاسبة", law: "مكتب محاماة", consulting: "مكتب استشارات", company: "شركة خدمات", broker: "وسيط", individual: "فرد" };
+
 const ROLES = { owner: "صاحب عمل", office: "مقدم خدمة", admin: "مدير" };
 const WAIT_DAYS = 1;
 const since = (t: string) => (Date.now() - new Date(t).getTime()) / DAY;
@@ -214,7 +215,7 @@ export function Invites() {
 export function Offices() {
   const { toast } = useSession();
   const { data, error, reload } = useLoad(async () => {
-    const { data, error } = await sb.from("offices").select("*, office_services(count)").order("created_at");
+    const { data, error } = await sb.from("offices").select("*, office_services(count), office_contacts(phone)").order("created_at");
     if (error) throw error;
     return data;
   }, []);
@@ -222,9 +223,15 @@ export function Offices() {
     e.preventDefault();
     const form = e.currentTarget, f = new FormData(form);
     const val = (k: string) => String(f.get(k) || "").trim() || null;
-    const { error } = await sb.from("offices").insert({ name: val("name"), kind: val("kind"), phone: val("phone"), license_no: val("license") });
+    const { data: o, error } = await sb.from("offices").insert({ name: val("name"), kind: val("kind"), license_no: val("license"), verified: !!val("license") }).select("id").single();
     if (error) return toast("تعذّرت إضافة مقدم الخدمة", true);
+    if (val("phone")) await sb.from("office_contacts").insert({ office_id: o.id, phone: val("phone") });
     toast("تمت إضافة مقدم الخدمة"); form.reset(); reload();
+  };
+  const verify = async (id: string, verified: boolean) => {
+    const { error } = await sb.from("offices").update({ verified }).eq("id", id);
+    if (error) return toast("تعذّر حفظ التوثيق", true);
+    toast(verified ? "تم توثيق مقدم الخدمة" : "أُلغي التوثيق"); reload();
   };
   return (
     <>
@@ -242,10 +249,10 @@ export function Offices() {
       </section>
       <section className="panel"><h2>كل مقدمي الخدمة</h2><div className="table-wrap">
         {error ? <p className="empty">تعذّر تحميل مقدمي الخدمة</p> : !data ? <Loading /> : data.length ? (
-          <table><thead><tr><th>مقدم الخدمة</th><th>النوع</th><th>الهاتف</th><th>رقم الترخيص</th><th>خدمات مسعّرة</th><th></th></tr></thead><tbody>
+          <table><thead><tr><th>مقدم الخدمة</th><th>النوع</th><th>الهاتف</th><th>رقم الترخيص</th><th>خدمات مسعّرة</th><th>التوثيق</th><th></th></tr></thead><tbody>
             {data.map((o) => (
-              <tr key={o.id}><td>{o.name}</td><td>{PROVIDER_KINDS[o.kind] || o.kind || ""}</td><td className="ltr">{o.phone || ""}</td><td className="ltr">{o.license_no || ""}</td>
-                <td>{num(o.office_services?.[0]?.count || 0)}</td><td><Link className="btn small" href={`/admin/offices/${o.id}/prices`}>الأسعار والمدد</Link></td></tr>
+              <tr key={o.id}><td>{o.name}</td><td>{PROVIDER_KINDS[o.kind] || o.kind || ""}</td><td className="ltr">{o.office_contacts?.phone || o.office_contacts?.[0]?.phone || ""}</td><td className="ltr">{o.license_no || ""}</td>
+                <td>{num(o.office_services?.[0]?.count || 0)}</td><td><button className={"chip " + (o.verified ? "ok" : "warn")} type="button" onClick={() => verify(o.id, !o.verified)}>{o.verified ? "موثّق" : "غير موثّق"}</button></td><td><Link className="btn small" href={`/admin/offices/${o.id}/prices`}>الأسعار والمدد</Link></td></tr>
             ))}
           </tbody></table>
         ) : <p className="empty">لا يوجد مقدمو خدمة بعد. ابدأ بإضافة الشريك الأول.</p>}

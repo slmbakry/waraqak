@@ -98,6 +98,7 @@ export function Job({ id }: { id: string }) {
   const { officeId, uid, toast } = useSession();
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState("");
+  const [showMail, setShowMail] = useState(false);
   const { data, error, reload } = useLoad(async () => {
     if (!officeId) return null;
     const svcs = await services();
@@ -171,7 +172,7 @@ export function Job({ id }: { id: string }) {
         {r.status !== "new" && <Thread requestId={id} events={events} other="صاحب العمل" asOffice closed={r.status === "cancelled"} onChange={reload} />}
         </div>
         <section className="panel"><h2>التفاصيل</h2>
-          <div className="kv"><span>صاحب العمل</span><b className="ltr">{owner?.email || ""}</b></div>
+          <div className="kv"><span>صاحب العمل</span>{!owner?.email ? <small className="note">يظهر بريده بعد قبول الطلب</small> : showMail ? <b className="ltr">{owner.email}</b> : <button className="linkish" type="button" onClick={() => setShowMail(true)}>أحتاج بريده الإلكتروني</button>}</div>
           {r.companies?.legal_form && <div className="kv"><span>الشكل القانوني</span><b>{r.companies.legal_form}</b></div>}
           <div className="kv"><span>{r.mode === "quote" ? "السعر المتفق عليه" : "التكلفة المعلنة"}</span><b>{money(r.quoted_fee)}</b></div>
           <div className="kv"><span>المدة المعلنة</span><b>{days(r.quoted_days || 0)}</b></div>

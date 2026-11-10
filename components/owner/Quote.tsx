@@ -10,6 +10,7 @@ import { services, type NeedField } from "@/lib/data";
 import { useCompanies } from "../companies";
 import { useLoad, useSession } from "../session";
 import { Avatar, Head, Icon, LoadError, Loading } from "../ui";
+import { ProviderInfo } from "../Provider";
 
 export function QuoteStart({ serviceId }: { serviceId: string }) {
   const router = useRouter();
@@ -115,6 +116,7 @@ export function Offers({ offers, onAccepted }: { offers: Offer[]; onAccepted: ()
               {tags.map((t) => <span key={t} className="chip ok">{t}</span>)}</div>
             <div className="oc-v"><span><small>السعر</small><b>{money(o.fee)}</b></span><span><small>مدة البدء والتسليم</small><b>{days(o.days)}</b></span></div>
             {o.terms && <div className="terms"><small className="note">الشروط</small><p>{o.terms}</p></div>}
+            <details className="about-provider"><summary>عن مقدم الخدمة</summary><ProviderInfo officeId={o.office_id} bare /></details>
             <button className="btn primary" type="button" disabled={expired || busy === o.id} onClick={() => accept(o)}><Icon name="stamp" size={18} />اقبل هذا العرض</button>
           </div>
         );

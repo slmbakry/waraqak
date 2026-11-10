@@ -751,3 +751,14 @@ textarea.ltr-links { font-size: 13.5px; line-height: 1.6; }
   table.prices td:nth-child(4)::before { content: "المدة بالأيام"; }
   table.prices input.mini { width: 100%; min-height: 44px; }
 }
+
+/* Provider profile */
+.provider { display: grid; gap: 4px; }
+.provider .about { color: var(--ink-2); font-size: 14.5px; margin: 6px 0; white-space: pre-wrap; }
+.provider .chip, .kv .chip { display: inline-flex; align-items: center; gap: 4px; justify-self: start; }
+.about-provider summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; font-size: 14px; }
+.about-provider[open] summary { margin-bottom: 8px; }
+.field .lbl { font-weight: 600; font-size: 14px; color: var(--ink-2); }
+.chips.pick .chip { cursor: pointer; font: inherit; font-family: var(--display); font-size: 13px; font-weight: 600; padding: 4px 12px; border: 1px solid var(--line); background: var(--surface); }
+.chips.pick .chip.ok { border-color: var(--accent); background: var(--accent-soft); }
+button.chip { cursor: pointer; font-family: var(--display); }

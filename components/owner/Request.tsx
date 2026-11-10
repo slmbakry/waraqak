@@ -4,10 +4,11 @@ import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num } from "@/lib/format";
 import { eventLabel, STATUS, awaitingOffers, services, stageLate } from "@/lib/data";
 import { useLoad, useSession } from "../session";
-import { Avatar, FilesBlock, Head, Kpi, LoadError, Loading, StageRow, finishStage } from "../ui";
+import { FilesBlock, Head, Kpi, LoadError, Loading, StageRow, finishStage } from "../ui";
 import Requirements from "../Requirements";
 import OwnerConfirm from "./OwnerConfirm";
 import Thread from "../Thread";
+import { ProviderContact, ProviderInfo } from "../Provider";
 import { placeOf } from "@/lib/places";
 import { AgreementBox, NeedList, Offers, type Agreement, type Offer } from "./Quote";
 
@@ -16,7 +17,7 @@ export default function Request({ id }: { id: string }) {
   const { data, error, reload } = useLoad(async () => {
     const svcs = await services();
     const [{ data: r }, { data: stages }, { data: events }, { data: offers }, { data: agreement }] = await Promise.all([
-      sb.from("requests").select("*, offices(name,phone), companies(name,governorate,registry_office,tax_office)").eq("id", id).maybeSingle(),
+      sb.from("requests").select("*, offices(name), companies(name,governorate,registry_office,tax_office)").eq("id", id).maybeSingle(),
       sb.from("request_stages").select("*").eq("request_id", id).order("idx"),
       sb.from("events").select("*").eq("request_id", id).order("created_at"),
       sb.from("offers").select("*, offices(name)").eq("request_id", id).eq("auto", false).order("fee"),
@@ -98,8 +99,8 @@ export default function Request({ id }: { id: string }) {
           {r.mode === "quote" && <section className="panel"><h2>ما طلبته</h2><NeedList fields={s.need_fields || []} need={r.need} /></section>}
           {!self && !waiting && (
             <section className="panel">
-              <div className="row"><Avatar name={r.offices?.name} /><span className="grow"><b>{r.offices?.name || ""}</b><small className="note">مقدم الخدمة المنفذ</small></span></div>
-              {r.offices?.phone && <a className="btn" href={`tel:${r.offices.phone}`}><span className="ltr">{r.offices.phone}</span></a>}
+              <ProviderInfo officeId={r.office_id} />
+              <ProviderContact officeId={r.office_id} agreed={["accepted", "in_progress", "done"].includes(r.status)} />
             </section>
           )}
           {r.status !== "done" && <section className="panel"><Requirements serviceId={s.id} kind={s.place_kind} place={placeOf(r.companies, s.place_kind)} /></section>}
