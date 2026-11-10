@@ -7,6 +7,7 @@ import { fmtDate, num } from "@/lib/format";
 import { PLACE_LABEL, type PlaceKind } from "@/lib/places";
 import { useLoad } from "./session";
 import { Loading } from "./ui";
+import Trust from "./Trust";
 
 export type ReqStat = { item_id: string; text: string; providers: number; owners: number; total: number;
   providers_here: number; owners_here: number; total_here: number; last_at: string | null };
@@ -57,6 +58,7 @@ export default function Requirements({ serviceId, kind, place, title = "المس
         </ul>
       )}
       {data?.some((s) => s.total) && <small className="note">الرقم بجانب كل مستند هو عدد من أكدوا طلبه من مقدمي الخدمة وأصحاب الشركات. اضغط عليه لترى التفاصيل.</small>}
+      <Trust serviceId={serviceId} />
     </div>
   );
 }

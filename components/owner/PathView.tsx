@@ -1,4 +1,5 @@
 "use client";
+import { ReportButton } from "../Trust";
 // One path of the guide: a few questions, then the procedure with who decides,
 // why, its steps and documents, what is still unconfirmed, and the sources.
 // It works without a company; a company is asked for only to start it.
@@ -116,6 +117,7 @@ export default function PathView({ id }: { id: string }) {
               <ul className="sources">{o.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></li>)}</ul>
             </section>
           )}
+          <ReportButton kind="path" refId={path.id} label={`${path.title}: ${o.title}`} />
         </div>
         <aside className="split-side">
           <section className="panel sum">

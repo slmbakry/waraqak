@@ -12,6 +12,7 @@ import ObligationsPreview from "../ObligationsPreview";
 import { useLoad, useSession } from "../session";
 import { Head, Icon, LoadError, Loading } from "../ui";
 import Files from "./Files";
+import { ReportButton } from "../Trust";
 
 function NoCompany({ what }: { what: string }) {
   return (
@@ -130,6 +131,7 @@ export function Obligations() {
                     {o.occ.rule.certainty === "estimated" && <p className="note">الموعد تقديري، لأن المصادر المتاحة لا تحدده بدقة. راجعه مع مقدم الخدمة.</p>}
                     {o.occ.rule.source_url && <a href={o.occ.rule.source_url} target="_blank" rel="noopener noreferrer">{o.occ.rule.source_title || "المصدر"}</a>}
                     <small className="note">آخر مراجعة {fmtDate(o.occ.rule.checked_on)}</small>
+                    <ReportButton kind="obligation" refId={o.occ.rule.id} label={o.occ.rule.title} />
                     {current.reminders_on && <button className="linkish" type="button" onClick={() => toggleMute(o.occ.rule.id)}>
                       {data.muted.has(o.occ.rule.id) ? "تفعيل التذكير بهذا الالتزام" : "إيقاف التذكير بهذا الالتزام"}</button>}
                   </details>

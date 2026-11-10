@@ -8,7 +8,8 @@ const REMINDER_BUFFER_DAYS = 14;
 export type NeedField = { id: string; label: string; type: "text" | "number" | "select" | "date"; options?: string[]; required?: boolean };
 // A service is either a procedure with a published price, or a request for offers ("quote").
 export type Service = { id: string; title: string; kind: string; agency: string; gov_fee: number; self_days: number; validity_days: number | null; docs: string[]; place_kind: import("./places").PlaceKind;
-  category_id: string; mode: "procedure" | "quote"; need_fields: NeedField[]; summary: string | null };
+  category_id: string; mode: "procedure" | "quote"; need_fields: NeedField[]; summary: string | null;
+  sources: { title: string; url: string }[]; confidence: "confirmed" | "likely" | "unverified"; reviewed_at: string | null; review_note: string | null };
 export type Category = { id: string; title: string; summary: string | null; icon: string; sort: number; active: boolean };
 export type Services = Record<string, Service>;
 export type Stage = { id?: string; idx: number; title: string; planned_days: number; started_at: string | null; done_at: string | null };

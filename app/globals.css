@@ -714,3 +714,11 @@ textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3
 .need-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .need-row input:not([type="checkbox"]) { flex: 1 1 200px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
 .need-row .check { align-items: center; }
+
+/* Trust line and error reports */
+.trust { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.trust details summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; font-size: 13.5px; }
+.trust .sources { margin-top: 6px; font-size: 13.5px; }
+.linkish.report { justify-self: start; font-size: 13.5px; color: var(--muted); }
+.linkish.report:hover { color: var(--bad); }
+textarea.ltr-links { font-size: 13.5px; line-height: 1.6; }

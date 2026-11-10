@@ -1,4 +1,5 @@
 "use client";
+import { ReportButton } from "../Trust";
 // Activities that need a licence of their own: the list, and one activity with
 // why it needs a licence, the steps and documents, and what the current
 // company has done about it.
@@ -110,6 +111,7 @@ export function ActivityView({ id }: { id: string }) {
           <section className="panel"><h2>المصادر</h2>
             <ul className="sources">{a.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></li>)}</ul>
           </section>
+          <ReportButton kind="activity" refId={a.id} label={a.title} />
         </div>
         <aside className="split-side">
           <section className="panel sum">

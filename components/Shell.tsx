@@ -13,7 +13,7 @@ import FeedbackButton from "./Feedback";
 
 // Each entry: path, label, icon, and "cta" for the one action that starts something new.
 const NAV: Record<Role, [string, string, string, string?][]> = {
-  admin: [["/", "الرئيسية", "home"], ["/admin/performance", "الأداء", "chart"], ["/admin/invites", "الدعوات", "send"], ["/admin/offices", "مقدمو الخدمة", "building"], ["/admin/catalog", "الأقسام والخدمات", "list"], ["/admin/companies", "الشركات", "folder"], ["/admin/requirements", "المتطلبات", "shield"], ["/admin/feedback", "الملاحظات", "chat"], ["/admin/users", "المستخدمون", "users"]],
+  admin: [["/", "الرئيسية", "home"], ["/admin/performance", "الأداء", "chart"], ["/admin/invites", "الدعوات", "send"], ["/admin/offices", "مقدمو الخدمة", "building"], ["/admin/catalog", "الخدمات", "list"], ["/admin/companies", "الشركات", "folder"], ["/admin/requirements", "المتطلبات", "docOk"], ["/admin/accuracy", "الدقة", "shield"], ["/admin/feedback", "الملاحظات", "chat"], ["/admin/users", "المستخدمون", "users"]],
   owner: [["/", "الرئيسية", "home"], ["/obligations", "الالتزامات", "calendar"], ["/actions", "خدمة جديدة", "plus", "cta"], ["/files", "ملف الشركة", "folder"], ["/requests", "طلباتي", "list"]],
   office: [["/", "الطلبات", "list"], ["/office/services", "خدماتي", "stamp"], ["/office/requirements", "المتطلبات", "shield"], ["/registry", "دليل الأنشطة", "book"]],
 };
