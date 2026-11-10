@@ -101,6 +101,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   );
 
 
+  // Before sign-in there is no app around the page: only the "coming soon" face.
+  if (s.ready && !p) return <Login />;
+
   let body: React.ReactNode;
   if (!s.ready) body = <Loading />;
   else if (!p) body = <Login />;

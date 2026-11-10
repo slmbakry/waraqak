@@ -495,3 +495,13 @@ label.btn.disabled { opacity: .5; pointer-events: none; }
 .share-acts { gap: 12px; flex-wrap: wrap; }
 .share-pick { display: grid; gap: 8px; max-height: 280px; overflow: auto; }
 .fb-box .field input { width: 100%; }
+
+/* Public face before launch */
+.teaser { min-height: 100dvh; display: grid; place-items: center; padding: 32px 16px; text-align: center; color: #F5F7FA; background: #0F2A44 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Ccircle cx='120' cy='120' r='100.8' fill='none' stroke='%23fff' stroke-opacity='.05' stroke-width='24'/%3E%3Cpath d='M104.64,64.8 H160.8 Q168,64.8 168,72 V168 Q168,175.2 160.8,175.2 H79.2 Q72,175.2 72,168 V97.44 Z' fill='%23fff' fill-opacity='.04'/%3E%3C/svg%3E") no-repeat left -120px bottom -160px / 520px; }
+.teaser-in { display: grid; gap: 18px; justify-items: center; width: min(440px, 100%); }
+.teaser h1 { font-size: clamp(30px, 7vw, 46px); color: #FFFFFF; }
+.teaser p { color: #B9C7D6; font-size: 17px; }
+.teaser-soon { font-family: var(--display); font-weight: 600; font-size: 14px; color: #E0A526; border: 1px solid rgba(224,165,38,.5); padding: 3px 18px; border-radius: 999px; }
+.teaser-in > .linkish { color: #8FD9BE; margin-top: 10px; }
+.teaser .auth { margin: 10px 0 0; text-align: start; color: var(--ink); }
+.teaser .auth p { color: var(--ink-2); font-size: 15px; }

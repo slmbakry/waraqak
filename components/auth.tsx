@@ -5,8 +5,6 @@ import { useState } from "react";
 import { sb } from "@/lib/supabase";
 import { writeSession } from "@/lib/storage";
 import { useSession } from "./session";
-import { Icon } from "./ui";
-import { Brand } from "./Brand";
 
 const back = () => location.origin + "/";
 
@@ -16,6 +14,7 @@ export function Login() {
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   const emailOf = () => {
     const v = email.trim();
@@ -43,49 +42,39 @@ export function Login() {
   };
 
   if (sent) return (
-    <section className="panel auth">
-      <h1 style={{ fontSize: 24 }}>تحقق من بريدك</h1><p>{sent}</p><p className="ltr"><b>{email.trim()}</b></p>
-      <p className="note">إذا لم تجده، فابحث في الرسائل غير المرغوب فيها.</p>
-      <button className="linkish" type="button" onClick={() => setSent(null)}>العودة إلى تسجيل الدخول</button>
-    </section>
+    <main className="teaser"><div className="teaser-in">
+      <section className="panel auth">
+        <h1 style={{ fontSize: 24 }}>تحقق من بريدك</h1><p>{sent}</p><p className="ltr"><b>{email.trim()}</b></p>
+        <p className="note">إذا لم تجده، فابحث في الرسائل غير المرغوب فيها.</p>
+        <button className="linkish" type="button" onClick={() => setSent(null)}>العودة إلى تسجيل الدخول</button>
+      </section>
+    </div></main>
   );
 
+  // Until launch the public face says only that something is coming; invited people open the form.
   return (
-    <div className="landing">
-      <section className="landing-top">
-        <div className="landing-t">
-          <span className="eyebrow"><Brand /> أسهل</span>
-          <h1>كل مستندات شركتك في مكان واحد، ولن يفوتك أي موعد</h1>
-          <p>يذكّرك <Brand /> قبل انتهاء أي مستند، ويوضح لك هل تنفذ الخطوة بنفسك أم مع مقدم خدمة، وبأي تكلفة وفي أي مدة. وإذا اخترت مقدم خدمة، تتابع عمله خطوة بخطوة.</p>
-          <div className="perks">
-            <span><Icon name="check" size={16} />تذكير قبل كل تجديد</span>
-            <span><Icon name="check" size={16} />أسعار مقدمي الخدمة ومددهم أمامك</span>
-            <span><Icon name="check" size={16} />تقييم حقيقي لالتزام كل مقدم خدمة</span>
-          </div>
-        </div>
-        <section className="panel auth">
-          <h2>تسجيل الدخول</h2>
-          <p className="note">هذه نسخة تجريبية، والدخول بدعوة فقط.</p>
-          <form className="stack" onSubmit={login}>
-            <div className="field"><label htmlFor="email">البريد الإلكتروني</label><input id="email" type="email" className="ltr" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <div className="field"><label htmlFor="pass">كلمة المرور</label><input id="pass" type="password" className="ltr" required autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} /></div>
-            <button className="btn primary" type="submit" disabled={busy}>دخول</button>
-          </form>
-          <div className="auth-links">
-            <button className="linkish" type="button" onClick={first}>أول مرة؟ أرسل لي رابط الدخول</button>
-            <button className="linkish" type="button" onClick={forgot}>نسيت كلمة المرور</button>
-          </div>
-        </section>
-      </section>
-      <section className="landing-how">
-        <h2>ثلاث خطوات لتطمئن على شركتك</h2>
-        <div className="how">
-          <div><span className="tile-ic"><Icon name="doc" size={24} /></span><b>أضف شركتك ومستنداتها</b><p>السجل التجاري والبطاقة الضريبية والتراخيص، وتاريخ انتهاء كل منها.</p></div>
-          <div><span className="tile-ic warn"><Icon name="bell" size={24} /></span><b>انتظر التذكير</b><p>نذكّرك في الوقت الذي يجب أن تبدأ فيه، لا في يوم الانتهاء.</p></div>
-          <div><span className="tile-ic ok"><Icon name="pulse" size={24} /></span><b>اختر وتابع</b><p>نفّذها بنفسك أو اختر مقدم خدمة، وتابع كل مرحلة حتى تكتمل.</p></div>
-        </div>
-      </section>
-    </div>
+    <main className="teaser">
+      <div className="teaser-in">
+        <img src="/logo-header-dark.svg" alt="ورقك" width={156} height={60} />
+        <span className="teaser-soon">قريبًا</span>
+        <h1>شيء جديد في الطريق</h1>
+        <p>نعمل عليه الآن، وسنعلن عنه في وقته.</p>
+        {!open ? <button className="linkish" type="button" onClick={() => setOpen(true)}>دخول المدعوين</button> : (
+          <section className="panel auth">
+            <h2>دخول المدعوين</h2>
+            <form className="stack" onSubmit={login}>
+              <div className="field"><label htmlFor="email">البريد الإلكتروني</label><input id="email" type="email" className="ltr" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <div className="field"><label htmlFor="pass">كلمة المرور</label><input id="pass" type="password" className="ltr" required autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} /></div>
+              <button className="btn primary" type="submit" disabled={busy}>دخول</button>
+            </form>
+            <div className="auth-links">
+              <button className="linkish" type="button" onClick={first}>أول مرة؟ أرسل لي رابط الدخول</button>
+              <button className="linkish" type="button" onClick={forgot}>نسيت كلمة المرور</button>
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
   );
 }
 

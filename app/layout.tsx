@@ -9,15 +9,15 @@ const site = process.env.NEXT_PUBLIC_SITE_URL || "https://waraqak.com";
 export const metadata: Metadata = {
   metadataBase: new URL(site),
   title: "ورقك",
-  description: "ورقك أسهل. كل مستندات شركتك في مكان واحد، ولن يفوتك أي موعد.",
+  description: "قريبًا.",
   robots: { index: false, follow: false },
   manifest: "/site.webmanifest",
   icons: {
     icon: [{ url: "/favicon.ico", sizes: "any" }, { url: "/favicon.svg", type: "image/svg+xml" }],
     apple: "/apple-touch-icon.png",
   },
-  openGraph: { title: "ورقك", description: "ورقك أسهل", images: [{ url: "/og-image.png", width: 1200, height: 630 }], locale: "ar_EG", type: "website" },
-  twitter: { card: "summary_large_image" },
+  // Link previews stay bare until launch: the name and "soon", without the slogan image.
+  openGraph: { title: "ورقك", description: "قريبًا", locale: "ar_EG", type: "website" },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0f2a44" };
 
