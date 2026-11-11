@@ -795,3 +795,13 @@ button.chip { cursor: pointer; font-family: var(--display); }
 .social.dark { color: #9FADBC; padding-bottom: 0; }
 .social.dark a { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: #DDE5EE; }
 .social.dark a:hover { color: #FFFFFF; border-color: #E0A526; }
+/* Each icon in its platform's own colour: a coloured tile with a white mark */
+.social a, .social.dark a { color: #FFFFFF; border-color: transparent; }
+.social a:hover, .social.dark a:hover { color: #FFFFFF; border-color: transparent; transform: translateY(-2px); box-shadow: 0 6px 14px -6px rgba(0,0,0,.45); }
+.social a { transition: transform .15s, box-shadow .15s; }
+.social a.fb { background: #1877F2; }
+.social a.ig { background: radial-gradient(circle at 30% 107%, #FDF497 0%, #FDF497 5%, #FD5949 45%, #D6249F 60%, #285AEB 90%); }
+.social a.tt { background: #000000; }
+.social.dark a.tt { box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+.social a.li { background: #0A66C2; }
+@media (prefers-reduced-motion: reduce) { .social a { transition: none; } .social a:hover { transform: none; } }
