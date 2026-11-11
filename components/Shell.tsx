@@ -10,6 +10,7 @@ import { Icon, Loading } from "./ui";
 import { Consent, Login, NotInvited, SetPassword } from "./auth";
 import { CompaniesProvider } from "./companies";
 import FeedbackButton from "./Feedback";
+import Social from "./Social";
 
 // Each entry: path, label, icon, and "cta" for the one action that starts something new.
 const NAV: Record<Role, [string, string, string, string?][]> = {
@@ -141,6 +142,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       {p?.role === "admin" && p.consent_at && <PreviewBar />}
       <div className="pilot">نسخة تجريبية بالدعوة فقط</div>
       <main className="wrap">{inside && s.role === "owner" ? <CompaniesProvider>{body}</CompaniesProvider> : body}</main>
+      {inside && <Social />}
       {inside && s.role !== "admin" && <FeedbackButton />}
     </>
   );

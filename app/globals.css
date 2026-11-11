@@ -786,3 +786,12 @@ button.chip { cursor: pointer; font-family: var(--display); }
 .fee-calc .fee-total { border-top: 2px solid var(--gold); border-bottom: 0; padding-top: 12px; }
 .fee-calc .fee-total td { border: 0; }
 .fee-calc .fee-total .fee-v { font-size: 20px; }
+
+/* Social accounts at the foot of the page */
+.social { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 20px 16px 28px; color: var(--muted); font-size: 14px; }
+.social nav { display: flex; gap: 8px; }
+.social a { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); }
+.social a:hover { color: var(--accent-ink); border-color: var(--accent); }
+.social.dark { color: #9FADBC; padding-bottom: 0; }
+.social.dark a { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: #DDE5EE; }
+.social.dark a:hover { color: #FFFFFF; border-color: #E0A526; }

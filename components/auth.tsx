@@ -5,6 +5,7 @@ import { useState } from "react";
 import { sb } from "@/lib/supabase";
 import { writeSession } from "@/lib/storage";
 import { useSession } from "./session";
+import Social from "./Social";
 
 const back = () => location.origin + "/";
 
@@ -73,6 +74,7 @@ export function Login() {
             </div>
           </section>
         )}
+        <Social dark />
       </div>
     </main>
   );
