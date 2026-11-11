@@ -768,3 +768,21 @@ button.chip { cursor: pointer; font-family: var(--display); }
 .dispute { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); }
 .dispute p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .extend { padding: 12px 14px; background: var(--sunken); border-radius: 12px; }
+
+/* Fee note and calculator */
+.fee-note { font-size: 14px; color: var(--ink-2); }
+.fee-calc { display: grid; gap: 10px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.fee-calc td { padding: 10px 4px; }
+.fee-calc td small { display: block; }
+.fee-calc .fee-v { text-align: end; white-space: nowrap; font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; vertical-align: middle; }
+.fee-calc .fee-total td { border-bottom: 0; border-top: 2px solid var(--gold); }
+.fee-calc .fee-total .fee-v { color: var(--accent-ink); font-size: 18px; }
+/* The calculator often sits in a narrow column, so each row stacks: what it is, then the amount. */
+.fee-calc table, .fee-calc tbody { display: block; }
+.fee-calc tr { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.fee-calc tr:last-child { border-bottom: 0; }
+.fee-calc td { display: block; border: 0; padding: 0; }
+.fee-calc .fee-v { text-align: start; font-size: 17px; }
+.fee-calc .fee-total { border-top: 2px solid var(--gold); border-bottom: 0; padding-top: 12px; }
+.fee-calc .fee-total td { border: 0; }
+.fee-calc .fee-total .fee-v { font-size: 20px; }

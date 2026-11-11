@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "@/lib/supabase";
 import { DAY, fmtDate, num } from "@/lib/format";
-import { forgetCatalog, type Service } from "@/lib/data";
+import { forgetCatalog, type FeePart, type Service } from "@/lib/data";
 import SEED from "@/lib/seed-sources.json";
 import { useLoad, useSession } from "../session";
 import { Head, Kpi, LoadError, Loading } from "../ui";
@@ -13,7 +13,7 @@ import { CONFIDENCE } from "../Trust";
 const STALE_DAYS = 180;
 const KIND: Record<string, string> = { service: "خدمة", path: "مسار", activity: "نشاط مرخّص", obligation: "التزام دوري", registry: "دليل الأنشطة", other: "أخرى" };
 const FIELD: Record<string, string> = { title: "الاسم", agency: "الجهة", gov_fee: "الرسوم الحكومية", self_days: "المدة", validity_days: "مدة السريان", docs: "المستندات",
-  stages: "المراحل", sources: "المصادر", confidence: "درجة التأكد", reviewed_at: "تاريخ المراجعة", mode: "طريقة التقديم", category_id: "القسم", active: "الظهور" };
+  stages: "المراحل", sources: "المصادر", fee_note: "ملاحظة الرسم", fee_parts: "بنود الرسم", confidence: "درجة التأكد", reviewed_at: "تاريخ المراجعة", mode: "طريقة التقديم", category_id: "القسم", active: "الظهور" };
 const short = (v: unknown) => { const t = v === null || v === undefined ? "فارغ" : typeof v === "object" ? (Array.isArray(v) ? `${num(v.length)} بند` : "…") : String(v); return t.length > 40 ? t.slice(0, 40) + "…" : t; };
 const age = (d: string | null) => (d ? Math.floor((Date.now() - new Date(d).getTime()) / DAY) : Infinity);
 type Svc = Service & { active: boolean };
@@ -102,7 +102,15 @@ function Review({ s, stale, onSaved }: { s: Svc; stale: boolean; onSaved: () => 
     if (sources.some((x) => !x || !/^https?:\/\//.test(x.url) || !x.title)) return toast("اكتب كل مصدر في سطر: العنوان ثم | ثم الرابط", true);
     if (f.get("confidence") !== "unverified" && !sources.length) return toast("أضف مصدرًا واحدًا على الأقل قبل أن ترفع درجة التأكد", true);
     const validity = String(f.get("validity") || "");
-    const { error } = await sb.from("services").update({ gov_fee: Number(f.get("fee") || 0), self_days: Number(f.get("days") || 0), validity_days: validity ? Number(validity) : null,
+    // One fee part per line: label | نسبة or ثابت | value | min | max | مؤكد or غير مؤكد | note
+    const cell = (v?: string) => (v && v.trim() !== "" ? Number(v.trim()) : null);
+    const parts: (FeePart | null)[] = String(f.get("parts") || "").split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+      const c = l.split("|").map((x) => x.trim());
+      if (c.length < 2 || !c[0] || !["نسبة", "ثابت"].includes(c[1])) return null;
+      return { label: c[0], kind: c[1] === "نسبة" ? "percent" : "fixed", value: cell(c[2]), min: cell(c[3]), max: cell(c[4]), sure: c[5] === "مؤكد", note: c[6] || null };
+    });
+    if (parts.some((x) => !x || (x.sure && x.value === null))) return toast("راجع بنود الرسم: كل سطر يبدأ بالاسم ثم نسبة أو ثابت، والبند المؤكد يحتاج قيمة", true);
+    const { error } = await sb.from("services").update({ fee_note: String(f.get("fee_note") || "").trim() || null, fee_parts: parts, gov_fee: Number(f.get("fee") || 0), self_days: Number(f.get("days") || 0), validity_days: validity ? Number(validity) : null,
       confidence: f.get("confidence"), sources, review_note: String(f.get("note") || "").trim() || null, reviewed_at: new Date().toISOString().slice(0, 10) }).eq("id", s.id);
     if (error) return toast("تعذّر حفظ المراجعة", true);
     onSaved();
@@ -119,6 +127,10 @@ function Review({ s, stale, onSaved }: { s: Svc; stale: boolean; onSaved: () => 
         </div>
         <div className="field"><label htmlFor={`as-${s.id}`}>المصادر: سطر لكل مصدر، العنوان ثم | ثم الرابط</label>
           <textarea id={`as-${s.id}`} name="sources" rows={3} className="ltr-links" defaultValue={(s.sources || []).map((x) => `${x.title} | ${x.url}`).join("\n")} /></div>
+        <div className="field"><label htmlFor={`afn-${s.id}`}>ملاحظة تظهر للمستخدم عن الرسم، إذا لم يكن رقمًا ثابتًا</label><input id={`afn-${s.id}`} name="fee_note" defaultValue={s.fee_note || ""} /></div>
+        <div className="field"><label htmlFor={`afp-${s.id}`}>بنود الرسم للحاسبة: سطر لكل بند. الاسم | نسبة أو ثابت | القيمة | حد أدنى | حد أقصى | مؤكد أو غير مؤكد | ملاحظة</label>
+          <textarea id={`afp-${s.id}`} name="parts" rows={3} defaultValue={(s.fee_parts || []).map((x) => [x.label, x.kind === "percent" ? "نسبة" : "ثابت", x.value ?? "", x.min ?? "", x.max ?? "", x.sure ? "مؤكد" : "غير مؤكد", x.note || ""].join(" | ")).join("\n")} />
+          <small className="note">النسبة تُكتب في المائة: ربع في المائة تُكتب 0.25، وواحد في الألف تُكتب 0.1.</small></div>
         <div className="form-row two">
           <div className="field"><label htmlFor={`ac-${s.id}`}>درجة التأكد</label><select id={`ac-${s.id}`} name="confidence" defaultValue={s.confidence}>{Object.entries(CONFIDENCE).map(([k, v]) => <option key={k} value={k}>{v[1]}</option>)}</select></div>
           <div className="field"><label htmlFor={`an-${s.id}`}>ملاحظة داخلية عن المراجعة</label><input id={`an-${s.id}`} name="note" defaultValue={s.review_note || ""} /></div>

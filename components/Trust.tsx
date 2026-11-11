@@ -7,6 +7,7 @@ import { sb } from "@/lib/supabase";
 import { fmtDate } from "@/lib/format";
 import { services } from "@/lib/data";
 import { useLoad, useSession } from "./session";
+import FeeCalc from "./FeeCalc";
 
 export const CONFIDENCE: Record<string, [string, string, string]> = {
   confirmed: ["ok", "مؤكد", "تأكدنا منه من الجهة نفسها أو من تنفيذ فعلي."],
@@ -54,6 +55,8 @@ export default function Trust({ serviceId }: { serviceId: string }) {
   const [tone, label, hint] = CONFIDENCE[s.confidence] || CONFIDENCE.unverified;
   return (
     <div className="trust">
+      {s.fee_note && <p className="fee-note"><b>عن الرسوم الحكومية: </b>{s.fee_note}</p>}
+      {s.fee_parts?.length > 0 && <FeeCalc parts={s.fee_parts} />}
       <div className="row"><span className={`chip ${tone}`}>{label}</span>
         <small className="note">{s.reviewed_at ? `آخر مراجعة ${fmtDate(s.reviewed_at)}` : "لم تُسجَّل مراجعة"}</small></div>
       <small className="note">{hint}</small>
