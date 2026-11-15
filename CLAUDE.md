@@ -53,7 +53,8 @@ and every read and write is enforced by Row Level Security.
 
 Next.js 15 App Router, React 19, TypeScript, plain CSS in `app/globals.css`. Every page is
 a client component; data comes straight from Supabase with RLS. No server API of our own
-except the `share` Edge Function.
+except the `share` Edge Function. One exception: `app/api/studio` serves the admin-only
+design studio page after checking the caller's role.
 
 Checks before every push: `npx tsc --noEmit` and `npx next build`.
 
@@ -113,6 +114,7 @@ Rules enforced by triggers and policies, not only by screens:
 | Owner | `components/owner/*`: Home, Catalog (new service), Quote (offers), Request, Sections (obligations, requests), Files, Shares, Guide, PathView, Activities, Registry |
 | Provider | `components/office/*`: Office (requests, job), QuoteJob, MyServices, MyProfile, ProviderRequirements |
 | Admin | `components/admin/*`: Admin (home, performance, invites, providers, prices, users, companies, feedback), Catalog, Accuracy |
+| Design studio | `/admin/studio`: `components/admin/Studio.tsx` fetches `app/api/studio/route.ts`, which checks the caller is an admin and returns the page in `app/api/studio/html.ts` (one self-contained page that draws social images on a canvas; generated, edit it as a whole) |
 | Shared | `Thread.tsx` (messages), `Dispute.tsx`, `Trust.tsx` (sources and error reports), `FeeCalc.tsx`, `Provider.tsx`, `Social.tsx`, `Requirements.tsx` |
 | Data helpers | `lib/data.ts` (services, categories, statuses), `lib/format.ts`, `lib/obligations.ts`, `lib/files.ts` |
 
