@@ -172,7 +172,7 @@ export function Invites() {
   const { data, error, reload } = useLoad(async () => {
     const [{ data: offices }, { data: list, error }] = await Promise.all([
       sb.from("offices").select("id,name").order("name"),
-      sb.from("invites").select("email,role,created_at,accepted_at,offices(name)").order("created_at", { ascending: false }),
+      sb.from("invites").select("email,role,created_at,accepted_at,expires_at,offices(name)").order("created_at", { ascending: false }),
     ]);
     return { offices: offices || [], list, failed: !!error };
   }, []);
@@ -186,15 +186,21 @@ export function Invites() {
     if (error) return toast(error.code === "23505" ? "هذا البريد مدعو من قبل" : "تعذّرت إضافة الدعوة", true);
     toast("تمت إضافة الدعوة"); form.reset(); setRole("owner"); reload();
   };
+  // An invitation lasts 7 days; renewing gives it 7 more from now.
+  const renew = async (email: string) => {
+    const { error } = await sb.from("invites").update({ expires_at: new Date(Date.now() + 7 * 86400000).toISOString() }).eq("email", email);
+    if (error) return toast("تعذّر تجديد الدعوة", true);
+    toast("جدّدنا الدعوة لسبعة أيام"); reload();
+  };
   return (
     <>
-      <Head eyebrow="الدعوات" title="من يمكنه دخول المنصة"><p>تحدد الدعوة دور الشخص. أرسل إليه رابط الموقع، وعندما يدخل ببريده سيحصل على هذا الدور تلقائيًا.</p></Head>
+      <Head eyebrow="الدعوات" title="من يمكنه دخول المنصة"><p>تحدد الدعوة دور الشخص. أرسل إليه رابط الموقع، وعندما يدخل ببريده سيحصل على هذا الدور تلقائيًا. الدعوة صالحة سبعة أيام ولمرة واحدة، ولا يدخل المنصة من ليس له دعوة.</p></Head>
       <section className="panel">
         <h2>دعوة جديدة</h2>
         <form className="form-row" onSubmit={add}>
           <div className="field"><label htmlFor="inv-email">البريد</label><input id="inv-email" name="email" type="email" className="ltr" required /></div>
           <div className="field"><label htmlFor="inv-role">الدور</label>
-            <select id="inv-role" value={role} onChange={(e) => setRole(e.target.value)}><option value="owner">صاحب عمل</option><option value="office">مقدم خدمة</option><option value="admin">مدير</option></select></div>
+            <select id="inv-role" value={role} onChange={(e) => setRole(e.target.value)}><option value="owner">صاحب عمل</option><option value="office">مقدم خدمة</option></select></div>
           <div className="field" hidden={role !== "office"}><label htmlFor="inv-office">مقدم الخدمة</label>
             <select id="inv-office" name="office">{(data?.offices || []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
           <button className="btn primary" type="submit">أضف الدعوة</button>
@@ -205,7 +211,9 @@ export function Invites() {
           <table><thead><tr><th>البريد</th><th>الدور</th><th>مقدم الخدمة</th><th>الحالة</th></tr></thead><tbody>
             {data.list.map((i: any) => (
               <tr key={i.email}><td className="ltr">{i.email}</td><td>{ROLES[i.role]}</td><td>{i.offices?.name || ""}</td>
-                <td>{i.accepted_at ? <span className="chip ok">دخل {fmtDate(i.accepted_at)}</span> : <span className="chip warn">معلّقة</span>}</td></tr>
+                <td>{i.accepted_at ? <span className="chip ok">دخل {fmtDate(i.accepted_at)}</span>
+                  : new Date(i.expires_at) > new Date() ? <span className="chip warn">معلّقة حتى {fmtDate(i.expires_at)}</span>
+                  : <><span className="chip">انتهت</span> <button className="linkish" type="button" onClick={() => renew(i.email)}>جدّدها</button></>}</td></tr>
             ))}
           </tbody></table>
         ) : <p className="empty">لا توجد دعوات بعد</p>}

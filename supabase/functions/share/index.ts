@@ -1,6 +1,7 @@
 // Public reader for fixed share links: given a link token, returns the
 // company name and, for each shared document, the files it has now, each
 // with a short-lived download URL. No sign-in; the token is the secret.
+// A link works while it is active and before its expiry (7 days, extendable by the owner).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -13,8 +14,8 @@ Deno.serve(async (req) => {
   const token = new URL(req.url).searchParams.get("t") || "";
   if (!/^[A-Za-z0-9_-]{16,40}$/.test(token)) return json({ error: "not_found" }, 404);
 
-  const { data: share } = await db.from("company_shares").select("id,company_id,title,document_ids,file_ids,active,views").eq("token", token).maybeSingle();
-  if (!share || !share.active) return json({ error: "not_found" }, 404);
+  const { data: share } = await db.from("company_shares").select("id,company_id,title,document_ids,file_ids,active,views,expires_at").eq("token", token).maybeSingle();
+  if (!share || !share.active || new Date(share.expires_at) <= new Date()) return json({ error: "not_found" }, 404);
 
   const [{ data: co }, { data: docs }, { data: files }] = await Promise.all([
     db.from("companies").select("name,status").eq("id", share.company_id).maybeSingle(),

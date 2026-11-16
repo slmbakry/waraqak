@@ -19,7 +19,7 @@ export default function ShareView({ token }: { token: string }) {
   if (data === undefined) return <Loading />;
   if (!data) return (
     <section className="panel share-page"><h1>هذا الرابط غير متاح</h1>
-      <p className="note">ربما أوقفه صاحب الشركة أو غيّره. اطلب منه الرابط الجديد.</p></section>
+      <p className="note">ربما انتهت صلاحيته، أو أوقفه صاحب الشركة أو غيّره. اطلب منه رابطًا جديدًا.</p></section>
   );
   const count = data.groups.reduce((n, g) => n + g.files.length, 0);
   return (

@@ -13,11 +13,12 @@ export function ProviderInfo({ officeId, bare }: { officeId: string; bare?: bool
   const { data } = useLoad(async () => {
     const [{ data: o }, { data: ratings }, { data: perf }] = await Promise.all([
       sb.from("offices").select("id,name,kind,about,areas,verified").eq("id", officeId).maybeSingle(),
-      sb.from("ratings").select("professionalism,speed").eq("office_id", officeId),
+      sb.rpc("office_ratings"),
       sb.rpc("office_stats"),
     ]);
-    const n = ratings?.length || 0, p = (perf || []).find((x: { office_id: string }) => x.office_id === officeId);
-    return { o, n, pro: n ? ratings.reduce((a, r) => a + r.professionalism, 0) / n : 0, speed: n ? ratings.reduce((a, r) => a + r.speed, 0) / n : 0, done: p?.done || 0, onTime: p?.on_time || 0 };
+    const avg = (ratings || []).find((x: { office_id: string }) => x.office_id === officeId) as { professionalism: number; speed: number; n: number } | undefined;
+    const n = avg?.n || 0, p = (perf || []).find((x: { office_id: string }) => x.office_id === officeId);
+    return { o, n, pro: n ? Number(avg.professionalism) : 0, speed: n ? Number(avg.speed) : 0, done: p?.done || 0, onTime: p?.on_time || 0 };
   }, [officeId]);
   if (!data?.o) return null;
   const { o, n, pro, speed, done, onTime } = data;

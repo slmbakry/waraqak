@@ -143,12 +143,13 @@ export function FilesBlock({ requestId }: { requestId: string }) {
     return (data || []).filter((f) => f.name !== ".emptyFolderPlaceholder");
   }, [prefix]);
   const open = async (name: string) => {
-    const { data: s, error } = await sb.storage.from("files").createSignedUrl(`${prefix}/${name}`, 300);
+    const { data: s, error } = await sb.storage.from("files").createSignedUrl(`${prefix}/${name}`, 300, { download: name.replace(/^\d+-/, "") });
     if (error) return toast("تعذّر فتح الملف", true);
     window.open(s.signedUrl, "_blank", "noopener");
   };
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+    if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(f.type)) return toast("ارفع صورة أو ملف PDF فقط", true);
     if (f.size > 10 * 1024 * 1024) return toast("حجم الملف أكبر من ١٠ ميجابايت", true);
     const safe = f.name.replace(/[^\w.\-؀-ۿ]+/g, "_");
     const { error } = await sb.storage.from("files").upload(`${prefix}/${Date.now()}-${safe}`, f);
@@ -163,7 +164,7 @@ export function FilesBlock({ requestId }: { requestId: string }) {
         <div className="kv" key={f.name}><span>{f.name.replace(/^\d+-/, "")}</span><button className="btn small" type="button" onClick={() => open(f.name)}>عرض</button></div>
       )) : <p className="empty">لا توجد ملفات بعد.</p>}
       <label className="btn small" htmlFor={`up-${requestId}`}>ارفع ملف</label>
-      <input type="file" id={`up-${requestId}`} hidden onChange={upload} />
+      <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" id={`up-${requestId}`} hidden onChange={upload} />
     </>
   );
 }

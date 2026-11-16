@@ -63,19 +63,19 @@ export async function optionsFor(serviceId: string, preview: boolean): Promise<O
   const svc = (await services())[serviceId];
   const [{ data: rows }, { data: ratings }, { data: perf }] = await Promise.all([
     sb.from("office_services").select("fee,days,offices(id,name,active,is_demo)").eq("service_id", serviceId),
-    sb.from("ratings").select("office_id,professionalism,speed"),
+    sb.rpc("office_ratings"),
     sb.rpc("office_stats"),
   ]);
   const perfOf = Object.fromEntries((perf || []).map((p: any) => [p.office_id, p]));
+  // Averages only: individual ratings are readable by their provider, their owner and admins.
   const stats: Record<string, { pro: number; speed: number; n: number }> = {};
-  (ratings || []).forEach((r) => {
-    const s = (stats[r.office_id] ||= { pro: 0, speed: 0, n: 0 });
-    s.pro += r.professionalism; s.speed += r.speed; s.n++;
+  (ratings || []).forEach((r: { office_id: string; professionalism: number; speed: number; n: number }) => {
+    stats[r.office_id] = { pro: Number(r.professionalism), speed: Number(r.speed), n: r.n };
   });
   const offices = (rows || []).map((r: any) => r).filter((r) => r.offices?.active && (!r.offices.is_demo || preview)).map((r) => {
     const s = stats[r.offices.id];
     return { key: r.offices.id, officeId: r.offices.id, label: r.offices.name, fee: Number(r.fee), cost: Number(r.fee) + Number(svc.gov_fee), days: r.days,
-      pro: s ? s.pro / s.n : null, speed: s ? s.speed / s.n : null, count: s ? s.n : 0,
+      pro: s ? s.pro : null, speed: s ? s.speed : null, count: s ? s.n : 0,
       done: perfOf[r.offices.id]?.done || 0, onTime: perfOf[r.offices.id]?.on_time || 0 } as Option;
   }).sort((a, b) => (b.pro ?? 0) - (a.pro ?? 0));
   return [{ key: "self", officeId: null, label: "سأنفذها بنفسي", sub: "من البوابة الإلكترونية أو بالتقديم بنفسك", fee: 0, cost: Number(svc.gov_fee), days: svc.self_days }, ...offices];

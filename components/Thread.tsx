@@ -29,6 +29,7 @@ export default function Thread({ requestId, events, other, asOffice, closed, onC
   };
   const upload = async (ev: React.ChangeEvent<HTMLInputElement>) => {
     const f = ev.target.files?.[0]; ev.target.value = ""; if (!f) return;
+    if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(f.type)) return toast("ارفع صورة أو ملف PDF فقط", true);
     if (f.size > 10 * 1024 * 1024) return toast("حجم الملف أكبر من ١٠ ميجابايت", true);
     const safe = f.name.replace(/[^\w.\-؀-ۿ]+/g, "_");
     setBusy(true);
@@ -53,7 +54,7 @@ export default function Thread({ requestId, events, other, asOffice, closed, onC
                   {e.kind === "file" && <b><Icon name="folder" size={16} />ملف مرفوع</b>}
                   <p>{e.note}</p>
                   {e.kind === "doc_request" && !asOffice && !closed && (
-                    <label className="btn small">ارفع هذا المستند<input type="file" hidden disabled={busy} onChange={upload} /></label>
+                    <label className="btn small">ارفع هذا المستند<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden disabled={busy} onChange={upload} /></label>
                   )}
                 </div>
                 <small className="note">{mine ? "أنت" : other} · {time(e.created_at)}</small>

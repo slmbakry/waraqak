@@ -29,7 +29,9 @@ and an experience easy for both business owners and providers. It must grow to n
 service lines (insurance and others) without new code.
 
 Before launch the public sees only a "coming soon" page; the idea must not show. Sign-in
-is by invitation, behind a small "دخول المدعوين" link.
+is by invitation, behind a small "دخول المدعوين" link. The database enforces it: an account
+is created only for an email with a live invitation (`handle_new_user` raises
+`not_invited`). When self sign-up opens at launch, that function has to change.
 
 ## Where things live
 
@@ -87,6 +89,20 @@ Rules enforced by triggers and policies, not only by screens:
   request between them is accepted, and screens show them only behind a button. An owner's
   email is never shown to providers.
 - A provider edits only its own `about` and `areas`; name, licence and `verified` are admin's.
+- Invitations last 7 days, work once, and never grant `admin` (an admin is made by an
+  existing admin, by hand). A person cannot change the email on their own profile row.
+- A provider sees a company's row while a request between them is not cancelled, and only
+  the document its request is about (`office_has_document`), while the request is live and
+  for 30 days after it is done. Providers do not insert documents.
+- Individual ratings are readable by their provider, their owner and admins. Everyone else
+  reads averages through `office_ratings()`.
+- The last stage closes only when a real file from the provider is in the request's folder
+  in Storage, not merely a `file` event.
+- Share links expire after 7 days (`company_shares.expires_at`); the owner extends or
+  renews them, and the `share` function refuses an expired link.
+- The `files` bucket takes JPEG, PNG, WebP and PDF only, up to 10 MB.
+- The guards skip their checks when `waraqak.internal` is set. Never expose a function that
+  sets it and then writes values that came from the caller unchecked.
 
 ## How services are modelled
 
@@ -151,6 +167,22 @@ Service facts: 43 services "likely" (from published sources), 7 "unverified". No
 "confirmed" from the authority itself. Incorporation fees: only two parts are fixed by the
 Companies Law (art. 17); the bar association, chamber of commerce, register and name
 certificate amounts are not confirmed.
+
+## Security review (16 November 2026)
+
+Full findings are in the claude.ai Project docs `09-security-review` and `13-code-review`.
+Fixed on 16 November: invitation-only in the database, provider scope, ratings, delivery
+proof, share-link expiry, file types, safe response headers, request-file type checks.
+
+Still open from that review:
+- Move the document reader into this repository instead of loading it at run time from
+  `slmbakry.github.io/doc-reader`, and pin or self-host the two CDN libraries. Then add a
+  full Content-Security-Policy (today only `frame-ancestors` is set).
+- Rate limit on the `share` function.
+- Dependency upgrade: `npm audit` reports 4 known issues; the full fix needs Next 16.
+- Owner's side, in the Supabase dashboard: disable open sign-ups, keep email confirmation
+  on, two-step verification for the admin account, leaked-password protection.
+- Automated policy tests, and an independent human review before the pilot launch.
 
 ## Open
 

@@ -9,7 +9,7 @@ import type { CompanyFile } from "@/lib/files";
 import { useLoad, useSession } from "../session";
 import { Icon } from "../ui";
 
-type Share = { id: string; token: string; title: string; document_ids: string[]; file_ids: string[]; active: boolean; views: number; last_viewed_at: string | null };
+type Share = { id: string; token: string; title: string; document_ids: string[]; file_ids: string[]; active: boolean; views: number; last_viewed_at: string | null; expires_at: string };
 type Doc = { id: string; title: string };
 
 const linkOf = (token: string) => `${typeof window !== "undefined" ? window.location.origin : "https://waraqak.com"}/s/${token}`;
@@ -34,6 +34,13 @@ export default function Shares({ companyId, companyName, docs, files }: { compan
     if (error) return toast("تعذّر الحفظ", true);
     toast(active ? "الرابط يعمل من جديد" : "أوقفنا الرابط، ولن يفتحه أحد حتى تعيد تشغيله"); reload();
   };
+  // A link lasts 7 days; extending gives it 7 more from now.
+  const extend = async (s: Share) => {
+    const { error } = await sb.from("company_shares").update({ expires_at: new Date(Date.now() + 7 * 86400000).toISOString() }).eq("id", s.id);
+    if (error) return toast("تعذّر تمديد الرابط", true);
+    toast("مددنا الرابط سبعة أيام"); reload();
+  };
+  const expired = (s: Share) => new Date(s.expires_at) <= new Date();
   const renew = async (s: Share) => {
     if (!confirm("سيتوقف الرابط الحالي نهائيًا، وستحتاج إلى إرسال الرابط الجديد لمن تريد. هل تريد المتابعة؟")) return;
     const { error } = await sb.rpc("renew_share_token", { sid: s.id });
@@ -50,16 +57,17 @@ export default function Shares({ companyId, companyName, docs, files }: { compan
 
   return (
     <section className="panel sum">
-      <h2>روابط ثابتة للمشاركة</h2>
-      <p className="note">أنشئ رابطًا يعرض مستندات تختارها، وأرسله مرة واحدة. عندما ترفع نسخة جديدة من مستند، تظهر في الرابط نفسه.</p>
+      <h2>روابط المشاركة</h2>
+      <p className="note">أنشئ رابطًا يعرض مستندات تختارها. الرابط صالح سبعة أيام، ويمكنك تمديده أو إيقافه في أي وقت. عندما ترفع نسخة جديدة من مستند، تظهر في الرابط نفسه.</p>
       {data?.map((s) => (
         <div key={s.id} className={"share-row" + (s.active ? "" : " off")}>
-          <div className="row between"><b>{s.title}</b><span className="chip">{s.active ? `${num(count(s))} ملف` : "متوقف"}</span></div>
-          <small className="note">{s.views ? `فُتح ${num(s.views)} مرة، آخرها ${fmtDate(s.last_viewed_at)}` : "لم يُفتح بعد"}</small>
-          {s.active && <div className="row"><button className="btn small primary" type="button" onClick={() => whatsapp(s)}>واتساب</button><button className="btn small" type="button" onClick={() => copy(s)}>نسخ الرابط</button></div>}
+          <div className="row between"><b>{s.title}</b><span className="chip">{!s.active ? "متوقف" : expired(s) ? "انتهت صلاحيته" : `${num(count(s))} ملف`}</span></div>
+          <small className="note">{s.views ? `فُتح ${num(s.views)} مرة، آخرها ${fmtDate(s.last_viewed_at)}` : "لم يُفتح بعد"} · {expired(s) ? "انتهت صلاحيته، مدّده ليعمل من جديد" : `صالح حتى ${fmtDate(s.expires_at)}`}</small>
+          {s.active && !expired(s) && <div className="row"><button className="btn small primary" type="button" onClick={() => whatsapp(s)}>واتساب</button><button className="btn small" type="button" onClick={() => copy(s)}>نسخ الرابط</button></div>}
           <div className="row share-acts">
             <button className="linkish" type="button" onClick={() => setEdit(s)}>تعديل المستندات</button>
             <button className="linkish" type="button" onClick={() => setActive(s, !s.active)}>{s.active ? "إيقاف" : "تشغيل"}</button>
+            <button className="linkish" type="button" onClick={() => extend(s)}>تمديد أسبوع</button>
             <button className="linkish" type="button" onClick={() => renew(s)}>تغيير الرابط</button>
             <button className="linkish danger" type="button" onClick={() => remove(s)}>حذف</button>
           </div>

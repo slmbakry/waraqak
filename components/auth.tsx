@@ -32,7 +32,8 @@ export function Login() {
   const first = async () => {
     const v = emailOf(); if (!v) return;
     const { error } = await sb.auth.signInWithOtp({ email: v, options: { emailRedirectTo: back() } });
-    if (error) return toast("تعذّر إرسال الرابط، حاول مرة أخرى بعد قليل", true);
+    // The database creates an account only for an invited email, so a refusal here usually means no live invitation.
+    if (error) return toast("تعذّر إرسال الرابط. تأكد أن هذا هو البريد المدعو، أو حاول مرة أخرى بعد قليل", true);
     setSent("أرسلنا إليك رابط الدخول. بعد الدخول ستنشئ كلمة مرور، ولن تحتاج إلى الرابط مرة أخرى.");
   };
   const forgot = async () => {
