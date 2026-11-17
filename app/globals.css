@@ -815,3 +815,23 @@ button.chip { cursor: pointer; font-family: var(--display); }
 .ob-sub { font-size: 15px; margin: 8px 0 0; }
 .ob-off summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; }
 .ob-off .ob-group { margin-top: 10px; }
+
+/* Choosing a legal form: forms stay in place and dim when an answer rules them out. */
+.ent-draft { background: var(--warn-soft); color: var(--warn-ink); border-radius: 12px; padding: 8px 14px; font-size: 13.5px; margin: 0 0 14px; }
+.ent-q { display: grid; gap: 6px; }
+.ent-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ent-chip { font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.ent-chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.ent-map { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ent-col { display: grid; gap: 8px; align-content: start; }
+.ent-card { font: inherit; font-size: 14px; font-weight: 600; text-align: start; padding: 12px; border-radius: 12px; cursor: pointer;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--accent); transition: opacity .25s, border-color .25s, background .25s; }
+.ent-card.off { opacity: .5; background: transparent; border-style: dashed; border-color: var(--line); color: var(--muted); font-weight: 500; }
+.ent-card.sel { box-shadow: 0 0 0 2px var(--gold); }
+.ent-why { background: var(--sunken); border-radius: 12px; padding: 10px 14px; margin: 0; display: grid; gap: 6px; }
+.ent-table { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.ent-tr { display: grid; grid-template-columns: 90px repeat(auto-fit, minmax(0, 1fr)); gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.ent-tr.head { border-top: 0; background: var(--sunken); }
+.ent-tr span { color: var(--muted); font-size: 13px; }
+.ent-list { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+@media (max-width: 560px) { .ent-map { grid-template-columns: minmax(0, 1fr); } .ent-tr { grid-template-columns: 72px repeat(auto-fit, minmax(0, 1fr)); font-size: 13px; } }

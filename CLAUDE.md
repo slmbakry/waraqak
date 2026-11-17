@@ -126,6 +126,12 @@ Rules enforced by triggers and policies, not only by screens:
   unknown answer (VAT or employees), shown in gold with an "answer" link. An answer that
   rules a rule out wins over one that is unknown. The simplified regime stays opt-in
   (unknown counts as no), as in the reminders job. `applies()` is `state === "on"`.
+- Choosing a legal form (`lib/entities.ts`, screen `/admin/entities`): seven forms in three
+  families, three questions, and for each answer the forms it rules out with the reason.
+  The screen dims what is ruled out, never hides it, and never recommends a form ("المتاح
+  حسب إجاباتك", a comparison only when three or fewer remain). Its content is a DRAFT for
+  the lawyer: until reviewed it is admin-only and says so on the page. After review it
+  replaces `entityFor()` in `components/owner/Guide.tsx`, which today suggests one form.
 - Paths (amendments, closure) and licensed activities live in code: `lib/paths.ts` and
   `lib/activities.ts`, each with sources and an "unsure" list. The registry activity guide
   is `lib/registry.ts` (68 entries from ISIC, not yet from the official portal).
