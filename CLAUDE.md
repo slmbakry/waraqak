@@ -45,7 +45,7 @@ is created only for an email with a live invitation (`handle_new_user` raises
 | Database, sign-in, files | Supabase project `ewbpshqntggizomdejys` (Postgres, Auth, Storage bucket `files`) |
 | Server function | Supabase Edge Function `share` (`supabase/functions/share`), public, reads share links |
 | Scheduled jobs | `pg_cron`: `rasmy-check` hourly (lateness, escalation, renewals), `obligation-reminders` daily |
-| Document reader | `lib/reader.ts` loads OCR assets from `slmbakry.github.io/doc-reader` |
+| Document reader | `public/reader` (scripts copied from `slmbakry/doc-reader`) and `public/reader/vendor` (Tesseract 5.1.1 with worker, core and `ara`/`eng` data, pdf.js 3.11.174), loaded by `lib/reader.ts` |
 | Social accounts | facebook.com/waraqak, instagram.com/waraqak, tiktok.com/@waraqakeg, linkedin.com/company/waraqak |
 
 The Supabase URL and publishable key are in `lib/supabase.ts`; they are meant for browsers
@@ -174,10 +174,20 @@ Full findings are in the claude.ai Project docs `09-security-review` and `13-cod
 Fixed on 16 November: invitation-only in the database, provider scope, ratings, delivery
 proof, share-link expiry, file types, safe response headers, request-file type checks.
 
+Fixed on 17 November: the document reader and all its libraries are served from
+`public/reader`, nothing is fetched from another site at run time, and a full
+Content-Security-Policy is set in `next.config.mjs`.
+
+The reader in `public/reader` is a copy of `slmbakry/doc-reader` at commit `620cd5e`, with
+one change in `ocr.js` (it reads `window.DocReaderBase` for the engine's paths). To take a
+newer reader: copy the six scripts again, keep that change, bump `READER_VERSION` in
+`lib/reader.ts`, and test in a browser with a synthetic image and PDF, never a real document.
+
+The policy allows code from this site only, connections to our Supabase project, and
+Google Fonts. A new outside script, image host, font or API has to be added to the policy
+in `next.config.mjs`, or the browser blocks it silently; check the console after such a change.
+
 Still open from that review:
-- Move the document reader into this repository instead of loading it at run time from
-  `slmbakry.github.io/doc-reader`, and pin or self-host the two CDN libraries. Then add a
-  full Content-Security-Policy (today only `frame-ancestors` is set).
 - Rate limit on the `share` function.
 - Dependency upgrade: `npm audit` reports 4 known issues; the full fix needs Next 16.
 - Owner's side, in the Supabase dashboard: disable open sign-ups, keep email confirmation
