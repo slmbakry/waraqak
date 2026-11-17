@@ -22,13 +22,33 @@ export const entityOf = (p: Profile) => (p.legal_form === "منشأة فردية
 export const missingAnswers = (p: Profile) => ({ vat: p.vat_registered === null, employees: p.has_employees === null });
 
 // Unknown answers keep a rule out, except the simplified regime, which is opt-in.
-export function applies(rule: Rule, p: Profile) {
-  const a = rule.applies;
-  if (a.entity && a.entity !== entityOf(p)) return false;
-  if (a.vat !== undefined && p.vat_registered !== a.vat) return false;
-  if (a.employees !== undefined && p.has_employees !== a.employees) return false;
-  if (a.simplified !== undefined && !!p.simplified_tax !== a.simplified) return false;
-  return true;
+export const applies = (rule: Rule, p: Profile) => ruleState(rule, p).state === "on";
+
+// Every rule gets one of three states for a company, and none is hidden:
+// "on" it applies; "off" an answer rules it out, with the reason in words;
+// "pending" it may apply but an answer it depends on is still unknown. A rule
+// ruled out by one answer is "off" even if another is unknown. The simplified
+// regime stays opt-in (unknown counts as no), as in the reminders job.
+export type RuleState = { state: "on" | "off" | "pending"; reason: string };
+const QUESTION = { vat: "التسجيل في ضريبة القيمة المضافة", employees: "وجود موظفين مؤمَّن عليهم" };
+
+export function ruleState(rule: Rule, p: Profile): RuleState {
+  const a = rule.applies, off: string[] = [], pending: string[] = [];
+  if (a.entity && a.entity !== entityOf(p))
+    off.push(a.entity === "company" ? "هذا الالتزام على الشركات، والكيان منشأة فردية." : "هذا الالتزام على صاحب المنشأة الفردية، والكيان شركة.");
+  if (a.vat !== undefined) {
+    if (p.vat_registered === null) pending.push(QUESTION.vat);
+    else if (p.vat_registered !== a.vat) off.push(a.vat ? "غير مسجل في ضريبة القيمة المضافة." : "مسجل في ضريبة القيمة المضافة.");
+  }
+  if (a.employees !== undefined) {
+    if (p.has_employees === null) pending.push(QUESTION.employees);
+    else if (p.has_employees !== a.employees) off.push(a.employees ? "لا يوجد موظفون مؤمَّن عليهم." : "يوجد موظفون مؤمَّن عليهم.");
+  }
+  if (a.simplified !== undefined && !!p.simplified_tax !== a.simplified)
+    off.push(a.simplified ? "هذا الموعد لمن انضم إلى النظام الضريبي المبسط." : "منضم إلى النظام الضريبي المبسط، وله موعد مختلف.");
+  if (off.length) return { state: "off", reason: off[0] };
+  if (pending.length) return { state: "pending", reason: `قد يكون عليك، حسب ${pending.join(" و")}.` };
+  return { state: "on", reason: "" };
 }
 
 const endOfMonth = (y: number, m: number) => new Date(y, m + 1, 0); // m is 0-based and may overflow

@@ -6,7 +6,7 @@ import { sb } from "@/lib/supabase";
 import { DAY, days, fmtDate, money, num, today } from "@/lib/format";
 import { STATUS, awaitingOffers, docStatus, doerName, services, sortStages, stageLate } from "@/lib/data";
 import { CompanySwitch, useCompanies, type Company } from "../companies";
-import { applies, missingAnswers, occurrences, type Occurrence, type Profile, type Rule } from "@/lib/obligations";
+import { missingAnswers, occurrences, ruleState, type Occurrence, type Profile, type Rule } from "@/lib/obligations";
 import { useState } from "react";
 import ObligationsPreview from "../ObligationsPreview";
 import { useLoad, useSession } from "../session";
@@ -74,7 +74,10 @@ export function Obligations() {
       tone: due.getTime() < t ? "bad" : "", href: `/requests/${r.id}`, cta: "متابعة" });
   });
   let doneCount = 0;
-  data.rules.filter((r) => applies(r, current)).forEach((rule) => occurrences(rule, current).forEach((o) => {
+  // Rules that may apply but wait for an answer, and rules an answer rules out, are listed below the dated ones, never hidden.
+  const states = data.rules.map((r) => ({ r, s: ruleState(r, current) }));
+  const maybe = states.filter((x) => x.s.state === "pending"), notMine = states.filter((x) => x.s.state === "off");
+  states.filter((x) => x.s.state === "on").map((x) => x.r).forEach((rule) => occurrences(rule, current).forEach((o) => {
     if (data.done.has(`${rule.id}|${o.period}`)) { doneCount++; return; }
     const left = (o.due.getTime() - t) / DAY;
     obs.push({ date: o.due, title: rule.title, sub: `${o.label} · ${rule.agency}`, tone: left < 0 ? "bad" : left <= 7 ? "warn" : "", href: null, cta: "", occ: o });
@@ -147,6 +150,27 @@ export function Obligations() {
         <section className="panel"><p className="empty">لا توجد التزامات مسجلة بعد. أضف مستندات الشركة وتواريخ انتهائها لتظهر هنا.</p>
           <Link className="btn" href={`/companies/${current.id}/documents/new`}>إضافة مستند</Link></section>
       )}
+      {maybe.length > 0 && (
+        <section className="panel"><h2>قد تكون على شركتك</h2>
+          <p className="note">هذه الالتزامات تتوقف على إجابة لم تحددها بعد. أجب عن الأسئلة أعلى الصفحة لتظهر بمواعيدها، أو لتخرج من القائمة.</p>
+          <div className="ob-group">{maybe.map(({ r, s }) => (
+            <div key={r.id} className="ob-row pending">
+              <span className="grow"><b>{r.title}</b><small className="note">{r.agency}</small><small className="ob-reason">{s.reason}</small></span>
+              <a className="btn small" href="#ob-questions">أجب</a>
+            </div>
+          ))}</div>
+        </section>
+      )}
+      {notMine.length > 0 && (
+        <details className="ob-off panel"><summary>ليست على شركتك حسب بياناتها ({num(notMine.length)})</summary>
+          <div className="ob-group">{notMine.map(({ r, s }) => (
+            <div key={r.id} className="ob-row off">
+              <span className="grow"><b>{r.title}</b><small className="note">{r.agency}</small><small className="ob-reason">{s.reason}</small></span>
+            </div>
+          ))}</div>
+          <p className="note">بيانات الشركة غير صحيحة؟ عدّلها من صفحة الشركة، وتتحدث القائمة تلقائيًا.</p>
+        </details>
+      )}
       {doneCount > 0 && <p className="note">أنجزت {doneCount === 1 ? "التزامًا واحدًا" : `${doneCount} من الالتزامات`} في هذه الفترة.</p>}
       <p className="note">المواعيد محسوبة من القوانين والقرارات المنشورة، وبجانب كل التزام مصدره. وقد تتغير المواعيد بقرارات جديدة، فنراجعها باستمرار.</p>
     </>
@@ -201,10 +225,11 @@ function ProfileQuestions({ company, onSaved }: { company: Company; onSaved: () 
       <div className="seg-choice">
         <label><input type="radio" name={name} value="yes" defaultChecked={val === true} /> نعم</label>
         <label><input type="radio" name={name} value="no" defaultChecked={val === false} /> لا</label>
+        <label><input type="radio" name={name} value="" defaultChecked={val === null} /> لا أعرف</label>
       </div><small className="note">{help}</small></div>
   );
   return (
-    <section className="panel navy-soft">
+    <section className="panel navy-soft" id="ob-questions">
       <h2>أجب عن أسئلة قليلة لنحسب التزامات شركتك</h2>
       <form className="stack" onSubmit={save}>
         {yn("vat", "هل الشركة مسجلة في ضريبة القيمة المضافة؟", company.vat_registered, "التسجيل إلزامي إذا بلغت المبيعات ٥٠٠ ألف جنيه في السنة.")}

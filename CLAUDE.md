@@ -32,6 +32,9 @@ Before launch the public sees only a "coming soon" page; the idea must not show.
 is by invitation, behind a small "دخول المدعوين" link. The database enforces it: an account
 is created only for an email with a live invitation (`handle_new_user` raises
 `not_invited`). When self sign-up opens at launch, that function has to change.
+On 17 November the owner confirmed it again: the public keeps seeing only "coming soon"
+(no public landing page, no public map, no interest form for now), and every new screen is
+built behind sign-in, ready for him and for invited people.
 
 ## Where things live
 
@@ -117,6 +120,12 @@ Rules enforced by triggers and policies, not only by screens:
   calculator). Every change to these is logged in `service_changes`.
 - `reports`: error reports from any user on a service, path, activity or obligation;
   answered from `/admin/accuracy`.
+- Recurring obligations (`obligation_rules`, `lib/obligations.ts`): `ruleState()` gives each
+  rule one of three states for a company, and none is hidden. `on` applies; `off` an answer
+  rules it out, shown dimmed with the reason in words; `pending` may apply but waits for an
+  unknown answer (VAT or employees), shown in gold with an "answer" link. An answer that
+  rules a rule out wins over one that is unknown. The simplified regime stays opt-in
+  (unknown counts as no), as in the reminders job. `applies()` is `state === "on"`.
 - Paths (amendments, closure) and licensed activities live in code: `lib/paths.ts` and
   `lib/activities.ts`, each with sources and an "unsure" list. The registry activity guide
   is `lib/registry.ts` (68 entries from ISIC, not yet from the official portal).
@@ -153,8 +162,10 @@ in SQL, give it role `admin`, sign in with Playwright at phone and desktop sizes
 disable it again. The owner asked to keep it until the work is finished, then delete it
 and its data with one confirmation.
 
-The cloud environment's network allows Supabase and Google Fonts; other sites may be
-blocked, and the owner has declined adding more hosts.
+The cloud environment's network allows Google Fonts; other sites may be blocked, and the
+owner has declined adding more hosts. On 17 November the Supabase host was refused from the
+cloud browser too, so signed-in screens could not be tested there; the Supabase connector
+still works for SQL. If that persists, the owner tests signed-in screens himself.
 
 ## Status (14 November 2026)
 
