@@ -130,6 +130,15 @@ Rules enforced by triggers and policies, not only by screens:
   `lib/activities.ts`, each with sources and an "unsure" list. The registry activity guide
   is `lib/registry.ts` (68 entries from ISIC, not yet from the official portal).
 
+Owner sections are named الخريطة (`/obligations`, what is due and when), الخزينة
+(`/files`, the documents) and المتابعة (`/requests`, requests in progress). Confidence uses
+one set of words everywhere: مؤكد, مراجَع من مصادر منشورة, لم يُراجع بعد; an estimated
+obligation rule shows the last.
+
+Deferred on 17 November, by design and not forgotten: hiding the provider comparison and
+quotes behind one fixed Waraqak price waits for real prices from the providers and the
+lawyer's answer on the managed model; plans by number of companies wait for pricing.
+
 ## Map of the code
 
 | Area | Files |

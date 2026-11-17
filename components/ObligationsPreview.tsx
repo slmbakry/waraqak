@@ -32,7 +32,7 @@ export default function ObligationsPreview({ profile, title = "ماذا بعد �
           {r.source_url && <a href={r.source_url} target="_blank" rel="noopener noreferrer">{r.source_title || "المصدر"}</a>}
         </details>
       </span>
-      {r.certainty === "estimated" && <span className="chip warn">تقديري</span>}
+      {r.certainty === "estimated" && <span className="chip warn">لم يُراجع بعد</span>}
     </div>
   );
   return (

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   // Link previews stay bare until launch: the name and "soon", without the slogan image.
   openGraph: { title: "ورقك", description: "قريبًا", locale: "ar_EG", type: "website" },
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0e2238" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F6F2EA" }, { media: "(prefers-color-scheme: dark)", color: "#0B1622" }] };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

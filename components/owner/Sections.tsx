@@ -46,7 +46,7 @@ export function Obligations() {
   }, [current?.id, current?.vat_registered, current?.has_employees, current?.simplified_tax, current?.fiscal_year_end, current?.legal_form]);
 
   const head = (
-    <Head eyebrow={<>الالتزامات <CompanySwitch /></>} title="ما الذي على شركتك ومتى">
+    <Head eyebrow={<>الخريطة <CompanySwitch /></>} title="ما الذي على شركتك ومتى">
       <p>كل التزامات الشركة في مكان واحد ومرتبة حسب الموعد: التجديدات، والإقرارات الضريبية، والتأمينات، والاجتماع السنوي.</p>
     </Head>
   );
@@ -140,7 +140,7 @@ export function Obligations() {
                   </details>
                 )}
               </span>
-              {o.occ?.rule.certainty === "estimated" && <span className="chip warn">تقديري</span>}
+              {o.occ?.rule.certainty === "estimated" && <span className="chip warn">لم يُراجع بعد</span>}
               {o.href && <Link className="btn small" href={o.href}>{o.cta}</Link>}
               {o.occ && <button className="btn small" type="button" onClick={() => markDone(o.occ)}>تم</button>}
             </div>
@@ -253,7 +253,7 @@ export { Actions } from "./Catalog";
 export function CurrentFiles() {
   const { list, current } = useCompanies();
   if (!list) return <Loading />;
-  if (!current) return <><Head eyebrow="ملف الشركة" title="مستندات شركتك في مكان واحد" /><NoCompany what="ملفات الشركة" /></>;
+  if (!current) return <><Head eyebrow="الخزينة" title="مستندات شركتك في مكان واحد" /><NoCompany what="مستندات الشركة" /></>;
   return <Files companyId={current.id} switcher={<CompanySwitch />} />;
 }
 
@@ -268,7 +268,7 @@ export function MyRequests() {
     ]);
     return { svcs, reqs: reqs || [] };
   }, [current?.id]);
-  const head = <Head eyebrow={<>طلباتي <CompanySwitch /></>} title="إجراءات شركتك"><p>كل إجراء بدأته، مع حالته ومرحلته الحالية.</p></Head>;
+  const head = <Head eyebrow={<>المتابعة <CompanySwitch /></>} title="إجراءات شركتك"><p>كل إجراء بدأته، مع حالته ومرحلته الحالية.</p></Head>;
   if (!list) return <>{head}<Loading /></>;
   if (!current) return <>{head}<NoCompany what="الطلبات" /></>;
   if (error) return <>{head}<LoadError /></>;

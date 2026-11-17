@@ -166,10 +166,10 @@ export default function OwnerHome({ companyId }: { companyId?: string }) {
         </div>
         <aside className="split-side">
           <section className="panel">
-            <div className="row between"><h2>ملف الشركة</h2><span className="note">{num(fileCount)} ملف</span></div>
+            <div className="row between"><h2>الخزينة</h2><span className="note">{num(fileCount)} ملف</span></div>
             {plan && <div className="meter" aria-hidden="true"><i style={{ width: `${Math.min(100, Math.round((used / plan.storage_bytes) * 100))}%` }} /></div>}
             {plan && <small className="note">{fmtSize(used)} من {fmtSize(plan.storage_bytes)} · الباقة {plan.title}</small>}
-            <Link className="btn" href={`/companies/${co.id}/files`}>{fileCount ? "فتح ملف الشركة وإرساله" : "ارفع صور مستنداتك"}</Link>
+            <Link className="btn" href={`/companies/${co.id}/files`}>{fileCount ? "فتح الخزينة وإرسال المستندات" : "ارفع صور مستنداتك"}</Link>
           </section>
           <section className="panel">
             <div className="row between"><h2>آخر التحديثات</h2><Link className="link" href="/alerts">الكل</Link></div>

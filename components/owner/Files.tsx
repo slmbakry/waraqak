@@ -104,7 +104,7 @@ export default function Files({ companyId, switcher }: { companyId: string; swit
 
   return (
     <>
-      <Head back={switcher ? undefined : [`/companies/${companyId}`, "الرئيسية"]} eyebrow={<>{co.name} {switcher}</>} title="ملف الشركة">
+      <Head back={switcher ? undefined : [`/companies/${companyId}`, "الرئيسية"]} eyebrow={<>{co.name} {switcher}</>} title="الخزينة">
         <p>ارفع صور مستندات شركتك واحفظها في مكان واحد. وعندما تحتاج إلى إرسالها، اختر ما تريد، وسنجمعها في ملف واحد مضغوط وواضح.</p>
       </Head>
       <section className="panel usage">
